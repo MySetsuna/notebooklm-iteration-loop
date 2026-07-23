@@ -5,7 +5,8 @@ description: >
   真实架构与细节设计 → 据此**更新同一份**项目状态文档 → 替换 NotebookLM 里那唯一一份来源 →
   让它结合全部来源给下一步计划 → 对抗评审 → 归档 → 下一轮。当用户想「配合 NotebookLM 持续迭代
   某项目」「基于笔记本来源规划下一步开发」「把当前进度同步 NotebookLM 并要下一步指导」,或要
-  压缩/整理某个笔记本的存量来源、用 loop-engineering 最佳实践搭建开发/规划/归档工作流时使用。
+  初始化/压缩/整理某个笔记本的存量来源与 notes(清掉已实现或无关来源、把未实现规划移入 notes)、
+  用 loop-engineering 最佳实践搭建开发/规划/归档工作流时使用。
 ---
 
 # codegraph + NotebookLM 驱动的迭代循环
@@ -44,9 +45,34 @@ description: >
 
 ## 何时用
 
-用户表达「用 NotebookLM 持续迭代这个项目 / 同步进度取下一步 / 搭规划归档工作流 / 整理笔记本存量来源」时。
+用户表达「用 NotebookLM 持续迭代这个项目 / 同步进度取下一步 / 搭规划归档工作流 / 初始化或整理笔记本存量来源」时。
 前置:① `notebooklm-mcp` 能访问目标笔记本(没有就先 `notebook_list` 找,或 `nlm login`);
 ② 项目已有 codegraph 索引(`.codegraph/` 不存在则先 `codegraph init -i`)。
+开工先 `notebook_get` 查验笔记本是否合规(见下节);不合规则**先初始化,再进迭代**。
+
+## 初始化(笔记本不合规时先做)
+
+**合规 = 来源恒 1 份 `PROJECT-STATE`,未实现的规划/愿景类内容活在 notes。**
+不合规(多份来源 / 无 PROJECT-STATE / 规划散落在来源里)则先走以下流程。
+**用户只要求初始化时,做完即停,不往下推迭代。**
+
+1. **codegraph 立事实**:`codegraph sync` 更新索引(索引可疑则 `codegraph index`,首次
+   `codegraph init -i`),再用 `codegraph_context` / `codegraph_explore` / `codegraph_trace`
+   探明当前真实实现:模块边界、关键符号与调用路径、已落地能力清单——这是逐源分诊的判据。
+2. **先立新来源**:据代码事实写出首份 `docs/PROJECT-STATE.md`(结构见九步之 step 5),
+   `source_add` 上传、`source_rename` 为 `PROJECT-STATE`,确认入库。先立后拆,避免空窗。
+3. **逐来源分诊**:对其余每份来源 `source_get_content` 取原文,对照 codegraph 代码事实归类:
+   - **所述内容已实现** → 删(现状事实已由 PROJECT-STATE 承载,留着只会被引旧快照);
+   - **偏离项目 / 与项目无关** → 删;
+   - **未实现的规划、愿景与展望** → 先 `note(action="create")` 摘录进 notes(标题带原来源名,
+     便于溯源),再删;
+   - 拿不准,或含仍有效但未入代码的决策理由/坑 → 并入 `PROJECT-STATE.md` 对应章节后再删
+     (知识密度高的来源按「存量来源压缩」一节先深挖)。
+4. **批量删除**:`source_delete(confirm=true)`。删除不可逆:先确认 PROJECT-STATE 已入库、
+   规划类已落 notes,并**当面向用户确认**再删。
+5. **终态**:来源恒 1 份 = `PROJECT-STATE`;未实现规划全在 notes。此后每轮迭代照常走九步;
+   制定 contract 时用 `note(action="list")` 读存量规划作参考(notes 不参与 `notebook_query`
+   的来源检索,取用要靠 note 工具)。
 
 ## 一次迭代的九步
 
@@ -86,9 +112,10 @@ description: >
 9. **归档 + 落下一份 contract**:据(经对抗评审后的)结论写 `CONTRACT-iteration-{N+1}.md`;在 `docs/LOG.md`
    顶部追加一条本轮记录(做了什么 + 下一步 + 触发的熔断 + 驳回了 NotebookLM 的哪些建议)。
 
-## 存量来源压缩(接手一个已堆满来源的笔记本时做一次)
+## 存量来源压缩(初始化分诊的深挖子流程)
 
-老笔记本常有 20–50 个碎片来源,导致引用陈旧、答非所问。整理法:
+老笔记本常有 20–50 个碎片来源,导致引用陈旧、答非所问。初始化分诊中遇到**知识密集型**来源
+(大量未入代码的决策理由、接口约束、坑)时,删除前先按本节深挖:
 
 1. `notebook_get` 拿全量来源清单,按标题聚类出 **3–5 个领域**(例:协议/传输、服务端与会话、
    前端与 UI 扩展、Agent 与工具、安全与部署)。
@@ -125,6 +152,8 @@ docs/
 - **架构问 codegraph,方向问 NotebookLM**。前者是代码事实,后者是意见。冲突时以 codegraph 为准。
 - **一个项目一份状态文档**:更新+替换,不追加。**笔记本来源恒为 1**(仅 `PROJECT-STATE`);
   压缩产出的领域报告、每轮进度报告、NotebookLM 原文指导,一律只进本地 git 归档,永不上传。
+- **规划/愿景不当来源存**:未实现的规划、愿景、展望记入 notes(`note` 工具);来源只承载
+  现状事实。已实现或与项目无关的来源,初始化时删。
 - **停机条件写成合同不是愿望**:验收必须能被编译器/测试/退出码客观判定,不写「改进代码」。
 - **maker ≠ checker**:生成的东西不给自己打分;验证只认确定性证据。
 - **授权阶梯**:默认 Level 2(Draft)——改动在分支/worktree,人做物理验证后合并,不 auto-merge;
@@ -144,4 +173,7 @@ CLI:`codegraph sync`(增量刷新)/ `codegraph index`(全量)/ `codegraph init -
 **notebooklm-mcp**:`notebook_list` / `notebook_get`(找笔记本、看来源清单);
 `source_add(source_type="file"|"text", ...)`(`file` 需路径对 MCP 服务器可见,否则用 `text` 贴内容);
 `source_rename`(给常驻来源稳定名);`source_delete(confirm=true)`(替换旧版/清理碎片);
-`source_get_content`(拿来源原文,比 query 快);`notebook_query(notebook_id, query, source_ids=...)`。
+`source_get_content`(拿来源原文,比 query 快);`notebook_query(notebook_id, query, source_ids=...)`;
+`note(notebook_id, action="create"|"list"|"update"|"delete", content=..., title=..., note_id=...,
+confirm=...)`(统一 notes 工具:初始化时收纳未实现规划,制定 contract 时 `list` 读取;
+delete 需 confirm=true)。
