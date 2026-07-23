@@ -112,6 +112,21 @@ description: >
 9. **归档 + 落下一份 contract**:据(经对抗评审后的)结论写 `CONTRACT-iteration-{N+1}.md`;在 `docs/LOG.md`
    顶部追加一条本轮记录(做了什么 + 下一步 + 触发的熔断 + 驳回了 NotebookLM 的哪些建议)。
 
+## 深度调研(遇疑难时的外部信息通道)
+
+迭代中遇到**要探讨的问题或拿不准的方向**(架构选型、外部生态、最佳实践、疑难根因),
+不要靠猜,让 NotebookLM 做深度调研:
+
+1. `nlm research start "<问题>" -n <notebook_id> -m deep` 发起(web 深研,约 5 分钟);
+   `nlm research status` 轮询至完成。
+2. **只把「调研报告」导入为来源,排除全部参考材料**——几十份网页源只会稀释检索、
+   引来陈旧引用。若导入无法排除参考材料,导入后立刻 `source_delete` 之,仅留报告一份。
+3. 报告是**临时第二来源**:与 `PROJECT-STATE` 并存,供后续 `notebook_query` 制定合同时引用;
+   其建议仍须过对抗评审(step 8),不全信。
+4. **相关研究全部在项目中实现(确定性验证通过)后**,先把报告结论
+   `note(action="create")` 归档进 notes(标题带日期与主题),再 `source_delete(confirm=true)`
+   移除该来源报告。终态回归「来源恒 1 份」。
+
 ## 存量来源压缩(初始化分诊的深挖子流程)
 
 老笔记本常有 20–50 个碎片来源,导致引用陈旧、答非所问。初始化分诊中遇到**知识密集型**来源
@@ -152,6 +167,8 @@ docs/
 - **架构问 codegraph,方向问 NotebookLM**。前者是代码事实,后者是意见。冲突时以 codegraph 为准。
 - **一个项目一份状态文档**:更新+替换,不追加。**笔记本来源恒为 1**(仅 `PROJECT-STATE`);
   压缩产出的领域报告、每轮进度报告、NotebookLM 原文指导,一律只进本地 git 归档,永不上传。
+  唯二例外皆**临时**:排障日志(用完即删)与深度调研报告(研究实现完毕即归档 notes 后删,
+  见「深度调研」节)。
 - **规划/愿景不当来源存**:未实现的规划、愿景、展望记入 notes(`note` 工具);来源只承载
   现状事实。已实现或与项目无关的来源,初始化时删。
 - **停机条件写成合同不是愿望**:验收必须能被编译器/测试/退出码客观判定,不写「改进代码」。
@@ -177,3 +194,6 @@ CLI:`codegraph sync`(增量刷新)/ `codegraph index`(全量)/ `codegraph init -
 `note(notebook_id, action="create"|"list"|"update"|"delete", content=..., title=..., note_id=...,
 confirm=...)`(统一 notes 工具:初始化时收纳未实现规划,制定 contract 时 `list` 读取;
 delete 需 confirm=true)。
+
+**nlm CLI(深度调研)**:`nlm research start "<问题>" -n <notebook_id> -m deep` 发起;
+`nlm research status` 看进度;导入只留调研报告、排除参考材料(见「深度调研」节)。
