@@ -19,6 +19,24 @@
 - 关键调用路径:`<codegraph_trace from→to 的结果摘要>`
 - 目录现状:`<codegraph_files 的结果摘要>`
 
+### 架构图(mermaid,节点用真实符号/文件名,每轮随现状同步)
+
+```mermaid
+graph TD
+  UI["<入口模块/文件>"] --> Core["<核心模块>"]
+  Core --> Backend["<后端/存储>"]
+```
+
+### 关键流程图(主链路,一图一流程)
+
+```mermaid
+sequenceDiagram
+  participant A as <调用方>
+  participant B as <被调方>
+  A->>B: <关键调用(真实方法名)>
+  B-->>A: <关键返回/事件>
+```
+
 ## 本轮做了什么
 
 - <变更 1,含文件/模块落点>
