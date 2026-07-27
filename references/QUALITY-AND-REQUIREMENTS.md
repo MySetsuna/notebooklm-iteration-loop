@@ -55,7 +55,7 @@ active ──新修订──> 新 Pending（原 Active 继续生效）
 5. 运行 `python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md`
    作机器闸；退出码非 0 则不得开发。
 
-## 3. 依赖预检与安装阶梯
+## 3. 本机全局质量工具链
 
 先运行只读预检：
 
@@ -63,14 +63,26 @@ active ──新修订──> 新 Pending（原 Active 继续生效）
 python <skill>/scripts/preflight.py --project-root <repo> --strict
 ```
 
-`--strict` 仅以退出码报告必需能力缺口，不安装、不改配置。按下列阶梯处理：
+`--strict` 仅报告能力，不安装、不改配置。质量 CLI 统一装到当前用户/本机全局，跨项目复用；
+项目仅保留配置与调用命令，不因本 skill 改 manifest/lockfile。
 
-1. 复用仓库现有命令、锁文件与依赖；
-2. 缺已声明依赖时，使用仓库既有包管理器做项目级安装；
-3. 新增 coverage/E2E/Sonar 依赖前，先写入 Pending 并获批；
-4. 全局安装、系统服务、容器、付费 Sonar 服务、MCP 注册均须明确授权；
-5. NotebookLM MCP 缺失或认证坏掉，转配套 `install-notebooklm-mcp`；
-6. `.codegraph/` 缺失时依仓库 `AGENTS.md`：要求询问则先问，再运行 `codegraph init -i`。
+| 能力 | 探测命令 | 首选全局安装 |
+| --- | --- | --- |
+| Sonar | `sonar-scanner` / `dotnet-sonarscanner` | 官方 SonarScanner CLI 解压并把 `bin` 加入 PATH；.NET 项目可用 `dotnet tool install --global dotnet-sonarscanner` |
+| Python coverage | `coverage` / `coverage3` | `pipx install coverage`；无 pipx 时 `python -m pip install --user coverage` |
+| Node coverage | `c8` / `nyc` | 按项目现有命令择一：`npm install -g c8` 或 `npm install -g nyc` |
+| .NET coverage | `dotnet-coverage` | `dotnet tool install --global dotnet-coverage` |
+| Web E2E | `playwright` / `cypress` | 按项目配置择一：`npm install -g playwright` 或 `npm install -g cypress`；需要时再装用户级浏览器资产 |
+
+执行阶梯：
+
+1. 复用已可发现的全局 CLI；按项目语言/现有配置只补适用项，不一次装遍所有生态。
+2. 用户已明确要求全局多项目工具链时，直接作用户级全局安装；否则先列清单取得一次授权。
+3. 安装后用新进程执行 `<command> --version`（Sonar 可用 `-v`），再重跑 preflight。
+4. 全局 CLI 无法满足项目插件/import 解析时，记录限制并请用户裁定；禁止静默退回项目级安装。
+5. 管理员权限、系统 PATH、系统服务、容器、付费 Sonar 服务仍须明确授权；密钥不得落盘。
+6. NotebookLM MCP 缺失或认证坏掉，转配套 `install-notebooklm-mcp`。
+7. `.codegraph/` 缺失时依仓库 `AGENTS.md`：要求询问则先问，再运行 `codegraph init -i`。
 
 降级规则：
 

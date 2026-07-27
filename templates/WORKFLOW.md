@@ -20,7 +20,8 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md
 ```
 
-缺新工具不得静默全局安装；按 `references/QUALITY-AND-REQUIREMENTS.md` 的安装阶梯处理。
+缺共享质量 CLI 时按 `references/QUALITY-AND-REQUIREMENTS.md` 装到用户/本机全局并复检；
+不得为此改项目 manifest/lockfile，无法全局满足时显式停下裁定。
 
 ## codegraph 索引范围
 

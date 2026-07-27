@@ -22,10 +22,30 @@ E2E_CONFIGS = (
     "cypress.config.ts",
     "cypress.config.js",
 )
+GLOBAL_QUALITY_COMMANDS = {
+    "sonar": ("sonar-scanner", "dotnet-sonarscanner"),
+    "coverage": ("coverage", "coverage3", "c8", "nyc", "dotnet-coverage"),
+    "e2e": ("playwright", "cypress"),
+}
 
 
 def _which(command: str, search_path: str | None) -> bool:
     return shutil.which(command, path=search_path) is not None
+
+
+def _available(
+    commands: tuple[str, ...], search_path: str | None, project_root: Path
+) -> list[str]:
+    available = []
+    for command in commands:
+        executable = shutil.which(command, path=search_path)
+        if executable is None:
+            continue
+        try:
+            Path(executable).resolve().relative_to(project_root)
+        except ValueError:
+            available.append(command)
+    return available
 
 
 def _load_package_json(root: Path) -> dict[str, Any]:
@@ -98,6 +118,10 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
         (root / name).is_file()
         for name in ("sonar-project.properties", "pom.xml", "build.gradle", "build.gradle.kts")
     )
+    global_quality = {
+        family: _available(commands, search_path, root)
+        for family, commands in GLOBAL_QUALITY_COMMANDS.items()
+    }
     native_verifiers = []
     if node["verification_scripts"]:
         native_verifiers.append("node")
@@ -130,7 +154,8 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
             "native_verifiers": native_verifiers,
         },
         "quality": {
-            "sonar_scanner": _which("sonar-scanner", search_path),
+            "global_commands": global_quality,
+            "sonar_scanner": bool(global_quality["sonar"]),
             "sonar_configured": sonar_configured,
             "coverage_detected": bool(node["coverage_tools"])
             or (root / ".coveragerc").is_file()

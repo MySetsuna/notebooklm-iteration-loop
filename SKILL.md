@@ -7,7 +7,7 @@ description: >
   某项目」「基于笔记本来源规划下一步开发」「把当前进度同步 NotebookLM 并要下一步指导」,或要
   初始化/压缩/整理某个笔记本的存量来源与 notes(清掉已实现或无关来源、把未实现规划移入 notes)、
   把模糊需求转为待审批规范、用 Sonar/Coverage/E2E 质量遥测推演需求/债务/重构/Bug、
-  检索与补装项目验证依赖时使用。人眼归档浏览经配套 skill
+  检索并补装本机全局质量工具链、跨多个项目复用且不写项目依赖时使用。人眼归档浏览经配套 skill
   link-to-doc-library 把 docs 联入 Obsidian 文档库(人轨;agent 不查 vault)。MCP 未装/认证
   失效时先走配套 skill install-notebooklm-mcp。
 ---
@@ -93,9 +93,10 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md
 ```
 
-- `preflight.py` 只读探测 CLI、索引、项目原生测试、Sonar/Coverage/E2E 配置;不安装、不改项目。
+- `preflight.py` 只读探测本机全局 CLI、索引、项目原生测试及 Sonar/Coverage/E2E 配置;不安装、不改项目。
 - `requirements_gate.py` 检测 Pending 与文档结构;退出码非 0 则禁止开发。
-- 缺已声明依赖可用既有 lockfile/包管理器做项目级恢复;新增工具、全局安装、系统服务、MCP 注册须授权。
+- 缺适用质量 CLI 时按 reference 装到当前用户/本机全局并复检;不得为共享工具改项目 manifest/lockfile。
+- 用户已明确要求全局多项目工具链即视为授权用户级安装;管理员权限、系统服务、容器、付费服务仍须另行授权。
 - 质量结果只写有界摘要、相对基线、证据指针与 codegraph 影响;原始日志留本地/CI artifact。
 
 ## 迭代粒度:默认「大迭代」(约 2 日工作量)
