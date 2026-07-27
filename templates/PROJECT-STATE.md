@@ -1,7 +1,7 @@
 # <项目名> · 项目现状(PROJECT-STATE)
 
-> **唯一**上传 NotebookLM 的文档。每轮**覆盖式重写**,不要在这里堆积历史——
-> 历史留痕见 git 提交与 `docs/iterations/`(仅本地归档,不上传)。
+> NotebookLM 两份常驻来源之一；另一份是仅在用户批准需求后替换的 `REQUIREMENTS-SPEC`。
+> 本文每轮**覆盖式重写**,不要堆积历史；历史见 git 与 `docs/iterations/`。
 
 ## 项目是什么
 
@@ -47,6 +47,35 @@ sequenceDiagram
 ```text
 <命令 + 输出摘要 / 退出码>
 ```
+
+## 质量遥测
+
+### 验证能力
+
+| 能力 | 命令 | 状态 | 基线/门槛 |
+| --- | --- | --- | --- |
+| 编译/typecheck | `<command>` | available/missing | exit 0 |
+| unit/coverage | `<command>` | available/missing | `<Active REQ / WORKFLOW 定义>` |
+| E2E | `<command>` | available/not-applicable/missing | `<场景门槛>` |
+| Sonar/lint | `<command>` | available/missing | `<quality gate / new issues=0>` |
+
+### 本轮结果
+
+| 闸 | 退出码 | 结果 | 相对基线 | 证据 |
+| --- | ---: | --- | --- | --- |
+| `<gate>` | `<code>` | pass/fail | `<delta>` | `<本地 artifact / CI URL>` |
+
+### 待处理信号
+
+| ID | 类别 | 严重度 | 文件/符号 | codegraph 影响 | 证据 | 处置 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `<Q-001>` | bug/debt/refactor/requirement-candidate | `<level>` | `<path/symbol>` | `<impact/不可判>` | `<pointer>` | `<contract/Pending/non-goal>` |
+
+## 需求—代码—测试追踪
+
+| Active REQ | 状态 | 代码证据 | 测试/质量证据 |
+| --- | --- | --- | --- |
+| `REQ-<...>` | implemented/gap | `<path/symbol>` | `<test/gate>` |
 
 ## 能力对照(距最终目标差什么)
 
