@@ -57,6 +57,8 @@ active ──新修订──> 新 Pending（原 Active 继续生效）
 
 ## 3. 本机全局质量工具链
 
+先通过主 `SKILL.md` 的「Git 新鲜度硬闸」；未通过时禁止 preflight 后续扫描与质量规划。
+
 先运行只读预检：
 
 ```text

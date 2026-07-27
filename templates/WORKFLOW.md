@@ -2,6 +2,15 @@
 
 > 通用方法论见仓库根目录 `SKILL.md`。本文件只记录**本项目**的落地细节,克隆模板后按需填写。
 
+## Git 新鲜度硬闸
+
+任何 codegraph、Sonar/Coverage、NotebookLM 查询或规划前：
+
+1. `git fetch --prune <upstream-remote>`；
+2. 记录当前分支、upstream、两端 SHA、ahead/behind 与 dirty 摘要；
+3. clean 且与 upstream `0/0` 方可直行；其余先由用户确认有意分叉或忘记同步；
+4. 禁止 agent 擅自 pull/merge/rebase/reset/checkout/switch/stash。
+
 ## 确定性验证命令(本项目的 checker)
 
 - typecheck: `<替换为你的命令,如 pnpm typecheck / mypy .>`

@@ -20,7 +20,7 @@ description: >
 **确定性信号**(编译器/测试/退出码),不靠模型自述。
 **Obsidian / 文档库**只作人眼第二脑外壳(junction 浏览),**不是** agent 真相源。
 
-**八条硬规矩(与旧版的区别,别退回去):**
+**九条硬规矩(与旧版的区别,别退回去):**
 1. **架构事实来自 codegraph,不来自 NotebookLM**。想知道「谁调谁 / 改这个会炸什么 / 这条流怎么走」,
    查索引,别问笔记本。
 2. **笔记本里每个项目恒为 2 份常驻来源**:`REQUIREMENTS-SPEC`(用户批准的需求) +
@@ -47,6 +47,33 @@ description: >
 8. **质量信号是事实输入,不是 KPI**：Sonar/Coverage/E2E/编译器输出经有界摘要关联 codegraph
    后写入 `PROJECT-STATE`;原始长日志不上传。它们可提出需求/债务/重构/Bug 候选,但新产品行为
    仍须走 Pending→审批;禁止模型自评分。
+9. **先验 Git 新鲜度,后扫描与规划**：先确认当前分支、upstream、远端最新提交与本地状态;
+   发现 detached/no-upstream/dirty/ahead/behind/diverged 时须让用户判定「有意分叉」或「忘记同步」,
+   未裁定前禁止 codegraph/Sonar/Coverage 扫描、NotebookLM 查询、合同与开发规划。
+
+## Git 新鲜度硬闸(先于一切代码扫描与规划)
+
+对目标仓先执行只读状态检查与远端刷新：
+
+```text
+git status --short --branch
+git remote -v
+git fetch --prune <upstream-remote>
+git branch --show-current
+git rev-parse --abbrev-ref --symbolic-full-name '@{u}'
+git rev-list --left-right --count HEAD...<upstream>
+git rev-parse HEAD
+git rev-parse <upstream>
+```
+
+- 唯「非 detached + upstream 存在 + fetch 成功 + ahead/behind=`0/0` + 工作树与暂存区净」
+  可直接进入 preflight、codegraph、质量扫描、NotebookLM 与规划。
+- 任一条件不符，展示分支、upstream、两端 SHA、ahead/behind、dirty 文件摘要，并询问用户：
+  这是有意在旧基线/分叉功能上开发，还是忘记同步远端新代码？
+- 用户确认有意分叉，记录该例外与基线 SHA 后方可继续；用户称忘记同步，则由其选定
+  merge/rebase/切换分支等策略，执行后重跑本闸。
+- **禁止擅自** `pull`、`merge`、`rebase`、`reset`、`checkout`、`switch`、`stash` 或覆盖用户改动。
+- fetch/auth/网络失败即「无法确认远端最新」，须阻断扫描与规划，不得以本地 remote-tracking ref 冒充最新。
 
 ## 配套 skills(同仓 `skills/`)
 
@@ -127,6 +154,7 @@ python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIR
 ## 何时用
 
 用户表达「用 NotebookLM 持续迭代这个项目 / 同步进度取下一步 / 搭规划归档工作流 / 初始化或整理笔记本存量来源」时。
+任何前置、preflight、codegraph 与 NotebookLM 调用前,先过「Git 新鲜度硬闸」。
 前置:① `notebooklm-mcp` 能访问目标笔记本——没有工具、装不上、或认证失败时**先触发**
    [`install-notebooklm-mcp`](./skills/install-notebooklm-mcp/SKILL.md),完成后再继续;
    已可用则 `notebook_list` / `nlm login --check` 探活;
