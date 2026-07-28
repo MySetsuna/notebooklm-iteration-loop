@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from subprocess import CompletedProcess
 
 from scripts.preflight import detect
 
@@ -37,6 +38,18 @@ class PreflightTests(unittest.TestCase):
             self.assertIn("codegraph_cli_missing", result["blockers"])
             self.assertIn("codegraph_index_missing", result["blockers"])
             self.assertIn("project_verifier_not_detected", result["blockers"])
+
+    def test_distinguishes_directory_from_ready_codegraph_index(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".codegraph").mkdir()
+            with patch("scripts.preflight.shutil.which", return_value="codegraph"), patch(
+                "scripts.preflight.subprocess.run",
+                return_value=CompletedProcess(["codegraph"], 1, "[!] Not initialized", ""),
+            ):
+                result = detect(root)
+        self.assertFalse(result["required"]["codegraph_index"])
+        self.assertEqual(result["required"]["codegraph_index_status"], "not_initialized")
 
     def test_reports_machine_global_quality_commands(self) -> None:
         available = {"sonar-scanner", "coverage", "playwright"}

@@ -34,6 +34,4 @@ _无_
 
 ## 修订账本 (Revision Ledger)
 
-| 版本 | 日期 | Pending ID | 变更 | 关联/取代 | 批准证据 |
-| --- | --- | --- | --- | --- | --- |
-| v0.1.0 | <YYYY-MM-DD> | <INITIAL> | 初始需求基线 | - | <用户批准消息/记录> |
+关闭 Pending、历史修订与批准证据写入 `docs/archive/events-YYYY-MM.jsonl`，本文件只保留当前 Active/Pending。

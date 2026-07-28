@@ -1,25 +1,17 @@
 # <项目名> · 项目现状(PROJECT-STATE)
 
-> NotebookLM 两份常驻来源之一；另一份是仅在用户批准需求后替换的 `REQUIREMENTS-SPEC`。
-> 本文每轮**覆盖式重写**,不要堆积历史；历史见 git 与 `docs/iterations/`。
+> NotebookLM 两份常驻来源之一；另一份是获批后替换的 `REQUIREMENTS-SPEC`。
+> 稳定基线置前且尽量字节不变；本轮 delta 置尾。历史只存 `docs/archive/` JSONL。
 
-## 项目是什么
+## 项目与稳定架构基线（仅边界变化时更新）
 
-<一段话:目标、边界、非目标>
+- 目标/非目标:`<一句话>`
+- 锁定决策:`<少改的决策+理由>`
+- 基线依据:`<commit / CodeGraph version+status>`
+- 模块与落点:`<codegraph explore 的事实摘要>`
+- 关键接口/直接路径:`<已验证 symbol>`
 
-## 稳定段:不可动摇的设计主线 / 已锁定决策
-
-- <决策 1 + 理由,少改>
-- <决策 2 + 理由,少改>
-
-## 当前架构(由 codegraph 勾勒,每轮刷新)
-
-- 模块与落点:`<codegraph_context / codegraph_files 的结果摘要>`
-- 关键接口签名:`<codegraph_explore 的结果摘要>`
-- 关键调用路径:`<codegraph_trace from→to 的结果摘要>`
-- 目录现状:`<codegraph_files 的结果摘要>`
-
-### 架构图(mermaid,节点用真实符号/文件名,每轮随现状同步)
+### 架构图（边界未变则原样保留）
 
 ```mermaid
 graph TD
@@ -27,62 +19,28 @@ graph TD
   Core --> Backend["<后端/存储>"]
 ```
 
-### 关键流程图(主链路,一图一流程)
+### 关键流程图（边界未变则原样保留）
 
 ```mermaid
 sequenceDiagram
   participant A as <调用方>
   participant B as <被调方>
-  A->>B: <关键调用(真实方法名)>
+  A->>B: <关键调用>
   B-->>A: <关键返回/事件>
 ```
 
-## 本轮做了什么
-
-- <变更 1,含文件/模块落点>
-- <变更 2>
-
-## 确定性验证证据
-
-```text
-<命令 + 输出摘要 / 退出码>
-```
-
-## 质量遥测
-
-### 验证能力
-
-| 能力 | 命令 | 状态 | 基线/门槛 |
-| --- | --- | --- | --- |
-| 编译/typecheck | `<command>` | available/missing | exit 0 |
-| unit/coverage | `<command>` | available/missing | `<Active REQ / WORKFLOW 定义>` |
-| E2E | `<command>` | available/not-applicable/missing | `<场景门槛>` |
-| Sonar/lint | `<command>` | available/missing | `<quality gate / new issues=0>` |
-
-### 本轮结果
-
-| 闸 | 退出码 | 结果 | 相对基线 | 证据 |
-| --- | ---: | --- | --- | --- |
-| `<gate>` | `<code>` | pass/fail | `<delta>` | `<本地 artifact / CI URL>` |
-
-### 待处理信号
-
-| ID | 类别 | 严重度 | 文件/符号 | codegraph 影响 | 证据 | 处置 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `<Q-001>` | bug/debt/refactor/requirement-candidate | `<level>` | `<path/symbol>` | `<impact/不可判>` | `<pointer>` | `<contract/Pending/non-goal>` |
-
-## 需求—代码—测试追踪
+## 需求—代码—测试追踪（仅需求变化时更新）
 
 | Active REQ | 状态 | 代码证据 | 测试/质量证据 |
 | --- | --- | --- | --- |
 | `REQ-<...>` | implemented/gap | `<path/symbol>` | `<test/gate>` |
 
-## 能力对照(距最终目标差什么)
+## 本轮 delta（每轮仅改此段）
 
-- <差距 1>
-- <差距 2>
-
-## 开放问题 / 请 NotebookLM 定夺
-
-1. <问题 1>
-2. <问题 2>
+- 变更:`<paths/symbols>`
+- 直接影响:`<impact/affected 或不可判>`
+- planning_delta:`true/false + 理由`
+- 基线重建:`true/false + 触发条件`
+- 验证:`<命令 + exit + 有界摘要 + evidence>`
+- 质量:`<计数/相对基线/待处理 ID>`
+- 下一步:`<仅 planning_delta=true 时填写>`

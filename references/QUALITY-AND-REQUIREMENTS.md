@@ -84,7 +84,8 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 4. 全局 CLI 无法满足项目插件/import 解析时，记录限制并请用户裁定；禁止静默退回项目级安装。
 5. 管理员权限、系统 PATH、系统服务、容器、付费 Sonar 服务仍须明确授权；密钥不得落盘。
 6. NotebookLM MCP 缺失或认证坏掉，转配套 `install-notebooklm-mcp`。
-7. `.codegraph/` 缺失时依仓库 `AGENTS.md`：要求询问则先问，再运行 `codegraph init -i`。
+7. `.codegraph/` 缺失或 `codegraph status` 非 ready 时依仓库 `AGENTS.md`：要求询问则先问，再运行
+   `codegraph init -i`；不得把目录存在误判为可用索引。
 
 降级规则：
 

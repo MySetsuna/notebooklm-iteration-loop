@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,28 @@ GLOBAL_QUALITY_COMMANDS = {
 
 def _which(command: str, search_path: str | None) -> bool:
     return shutil.which(command, path=search_path) is not None
+
+
+def _codegraph_index_status(root: Path, search_path: str | None) -> str:
+    executable = shutil.which("codegraph", path=search_path)
+    if executable is None:
+        return "cli_missing"
+    if not (root / ".codegraph").is_dir():
+        return "missing"
+    try:
+        result = subprocess.run(
+            [executable, "status", str(root)],
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "unavailable"
+    output = f"{result.stdout}\n{result.stderr}"
+    if result.returncode == 0 and "Not initialized" not in output:
+        return "ready"
+    return "not_initialized" if "Not initialized" in output else "unavailable"
 
 
 def _available(
@@ -136,10 +159,11 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
     ).is_file():
         native_verifiers.append("jvm")
 
+    codegraph_status = _codegraph_index_status(root, search_path)
     blockers = []
-    if not _which("codegraph", search_path):
+    if codegraph_status == "cli_missing":
         blockers.append("codegraph_cli_missing")
-    if not (root / ".codegraph").is_dir():
+    if codegraph_status != "ready":
         blockers.append("codegraph_index_missing")
     if not native_verifiers:
         blockers.append("project_verifier_not_detected")
@@ -148,8 +172,9 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
         "schema_version": 1,
         "project_root": str(root),
         "required": {
-            "codegraph_cli": _which("codegraph", search_path),
-            "codegraph_index": (root / ".codegraph").is_dir(),
+            "codegraph_cli": codegraph_status != "cli_missing",
+            "codegraph_index": codegraph_status == "ready",
+            "codegraph_index_status": codegraph_status,
             "nlm_cli": _which("nlm", search_path),
             "native_verifiers": native_verifiers,
         },

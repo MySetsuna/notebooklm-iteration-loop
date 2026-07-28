@@ -8,7 +8,8 @@
 
 1. `git fetch --prune <upstream-remote>`；
 2. 记录当前分支、upstream、两端 SHA、ahead/behind 与 dirty 摘要；
-3. clean 且与 upstream `0/0` 方可直行；其余先由用户确认有意分叉或忘记同步；
+3. clean 且与 upstream `0/0` 方可开始规划；本轮实现产生的受控 diff 可继续只读 impact/测试选择，
+   不得借此跳过远端分叉裁定；
 4. 禁止 agent 擅自 pull/merge/rebase/reset/checkout/switch/stash。
 
 ## 确定性验证命令(本项目的 checker)
@@ -36,7 +37,8 @@ python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIR
 
 - 索引根目录:`<repo root>`
 - 排除:`<vendor/ / node_modules/ / 生成代码目录等>`
-- 首次:`codegraph init -i`;日常:`codegraph sync`。
+- 首次/索引缺失:由项目所有者决定是否 `codegraph init -i`；日常先 `codegraph status`，仅 pending/
+  异常/无 catch-up 时 `codegraph sync`；目标查询用 `codegraph explore`。
 
 ## NotebookLM 笔记本
 
@@ -47,8 +49,8 @@ python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIR
 
 ## 目录落点
 
-沿用仓库根目录 `SKILL.md` 「文件骨架」一节的约定;本项目实例见 `docs/`
-(`docs/REQUIREMENTS-SPEC.md`、`docs/PROJECT-STATE.md`、`docs/LOG.md`、`docs/iterations/`)。
+沿用仓库根目录 `SKILL.md` 的约定;本项目实例见 `docs/`
+(`docs/REQUIREMENTS-SPEC.md`、`docs/PROJECT-STATE.md`、`docs/archive/`、`docs/iterations/`)。
 
 ## 人轨:Obsidian / 文档库
 
