@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refresh NotebookLM Auth"
+  short_description: "Refresh NLM login via proxy and external CDP"
+  default_prompt: "Use $refresh-notebooklm-auth to refresh this machine's NotebookLM login safely."
