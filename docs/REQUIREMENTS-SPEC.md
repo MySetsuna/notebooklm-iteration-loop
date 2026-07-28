@@ -40,6 +40,16 @@
      全文件反序列化。
 - 预期落点:`SKILL.md`、`README.md`、`README.zh-CN.md`、`references/QUALITY-AND-REQUIREMENTS.md`、
   `templates/PROJECT-STATE.md`、`templates/WORKFLOW.md`、`docs/WORKFLOW.md`、`tests/`。
+- 深研结论(仍待批准):采纳「稳定架构基线 + 本轮 delta」；不新增第三份状态文档。常规轮先读
+  `PROJECT-STATE`、Git 受控 diff 与索引健康，只查目标 symbol/直接依赖；首次、索引缺失/异常、
+  重大分支/核心边界/数据模型变更或用户明确要求时才全量重建。以本机命令能力探测为准，最低依赖
+  `codegraph status`、`codegraph explore`，不得把版本特定 MCP 名称写成硬前提。
+- 归档决策(仍待批准):仅将 `LOG`、已结束 iteration 报告与 NotebookLM guidance 等历史改为
+  分片 append-only JSONL；`PROJECT-STATE`、`REQUIREMENTS-SPEC`、合同仍保留当前形态。记录以
+  schema/version、id、时间、类型、事实/证据指针、受影响路径/symbol、验证结果、下一步为最小字段；
+  提供有界 tail/type 读取，按需添加可重建索引，禁止整档反序列化。无 Markdown 归档副本。
+- 拒采项:深研中未被本机/上游证实的固定 token 降幅、500ms watcher、专有 `cgc doctor`、工具 preset、
+  PageRank 与固定阈值；收益只以同任务 `token-usage --all` A/B 实测声明。
 
 ## 正式需求 (Active Requirements)
 
