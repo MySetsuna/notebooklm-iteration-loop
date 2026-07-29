@@ -19,6 +19,10 @@
 - planning_delta:`true/false + 需求/边界/质量/外部阻塞/里程碑依据`
 - 查询预算:`<目标 symbol、changed files、允许 impact/affected；无代码则 skip>`
 - NotebookLM 往返:`<仅 planning_delta=true / skip>`
+- Context package:`python <skill>/scripts/context_compiler.py --root <repo> --task "..." --output .iteration/context.json`
+- 迭代预算:`python <skill>/scripts/iteration_budget.py check --budget .iteration/budget.json --usage .iteration/usage.json`
+- 硬闸:`python <skill>/scripts/iteration_gate.py --root <repo> --context .iteration/context.json --budget .iteration/budget.json --usage .iteration/usage.json`
+- Reviewer:`<只审合同、diff、失败知识与验证；不改代码>`
 
 ## 质量闸
 
@@ -30,6 +34,8 @@
 | Sonar/lint | `<command>` | `<quality gate / new issues=0>` |
 
 先跑受影响测试；合同完成、影响不可判、跨边界或提交前必须补全量适用验证。
+
+Context package 未列出的文件、symbol、测试不得主动探索；预算超限即停并归档。
 
 ## 需求—代码—测试追踪
 

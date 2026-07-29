@@ -19,6 +19,10 @@ description: >
 5. 质量结论必须有命令、退出码、计数或证据指针；原始长日志只留本地/CI artifact。
 6. 删除 NotebookLM 来源、覆盖用户工作、远端合并/重写历史均须单独授权。
 7. Token 收益以同任务 `token-usage --all` 的 A/B 计量，不承诺固定百分比。
+8. Agent 先读任务限定 `.iteration/context.json`；未列入 `read_policy.allowed_files` 的文件、symbol、测试不得主动探索。
+9. 每轮受 `iteration_budget.py` 的 exploration、CodeGraph query、files、retries、token 上限约束；超限即停并归档。
+10. `PROJECT-STATE` 只记录有证据的失败路径；NotebookLM 只产 `hypothesis`、`risk`、`candidate`、`question`，不直接裁决实现。
+11. 跨模块/高风险任务可用 `agent/<task>` 分支；Reviewer 只审合同、diff、失败知识与验证，不改代码，人工提升回主线。
 
 ## 开工闸
 
@@ -39,18 +43,24 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 ## 普通迭代（最短路径）
 
 1. 读 Active、当前合同、`PROJECT-STATE` 稳定基线和 `archive.py tail` 的少量相关记录；勿整读历史。
+   以 `templates/ITERATION-BUDGET.json` 初始化 `.iteration/budget.json`，再运行：
+   `python <skill>/scripts/context_compiler.py --root <repo> --task "..." --symbol ... --file ... --test ... --modify ... --constraint ... --budget .iteration/budget.json`。
+   后续只按 `.iteration/context.json` 的允许集合取上下文。
+   随即运行 `python <skill>/scripts/iteration_gate.py --root <repo> --context .iteration/context.json --budget .iteration/budget.json --usage .iteration/usage.json`；失败即停。
 2. 先看 `git diff --name-only/stat`，判定 `planning_delta`：仅当需求语义、架构边界、质量回归、
    外部阻塞或里程碑变化时为真。
 3. 无代码改动时跳过 CodeGraph。否则先 `codegraph status`；仅 status 显示 pending/异常、后台
    catch-up 不可用或用户要求时 `codegraph sync`。通过当前安装的 `--help`/MCP 工具表确认能力，
-   用 `codegraph explore <目标 symbol/问题>` 批量取直接事实；只对 changed symbol/file 查 impact/
-   affected tests。不得把版本特定 MCP 名硬写成前提。
+   用 `codegraph explore` 查询 context package 列出的目标 symbol/file；只对 changed symbol/file 查 impact/
+   affected tests。不得把版本特定 MCP 名硬写成前提，不得借 CodeGraph 自由扩张读取面。
 4. 按合同实现。先跑受影响测试；合同完成、影响不可判、跨边界或提交前必须跑全部适用确定性闸。
 5. 仅在稳定基线变更时更新 `PROJECT-STATE` 的基线/图；本轮证据、影响、质量结果写 delta 尾段。
    稳定前缀不重排、不插日期/UUID，以利缓存复用。
 6. `planning_delta=true` 才替换 `PROJECT-STATE` 来源并 `notebook_query`；否则只归档事实，跳过
-   NotebookLM 往返。新产品语义仍进 Pending。
+   NotebookLM 往返。查询要求其输出 hypothesis/risk/candidate/question；新产品语义仍进 Pending，不能把建议直接当决定。
 7. 用 `archive.py append` 写一条结构化历史；历史报告、guidance、已关闭账本不再生成 Markdown 副本。
+8. 运行 `python <skill>/scripts/iteration_gate.py --root <repo> --context .iteration/context.json --budget .iteration/budget.json --usage .iteration/usage.json`；
+   它同时拒绝全图、无显式入口、越出写集、背景复述与预算超限。合同完成后由 Reviewer 只读复核合同、context、diff、失败知识和验证证据。
 
 ## 全量重建触发
 
@@ -67,6 +77,7 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 
 - 不合规笔记本、来源清理、notes/愿景：读 [`references/INITIALIZATION-AND-NOTES.md`](./references/INITIALIZATION-AND-NOTES.md)。
 - 外部生态/疑难根因：读 [`references/DEEP-RESEARCH.md`](./references/DEEP-RESEARCH.md)。
+- 上下文包、预算、失败知识与 Reviewer：读 [`references/CONTEXT-CONTROL.md`](./references/CONTEXT-CONTROL.md)。
 - MCP 安装/认证：读配套 [`skills/install-notebooklm-mcp/SKILL.md`](./skills/install-notebooklm-mcp/SKILL.md)；
   外部 CDP 已登录但 NLM 未刷新时读 `skills/refresh-notebooklm-auth/SKILL.md`。
 - 文档库 junction：读配套 [`skills/link-to-doc-library/SKILL.md`](./skills/link-to-doc-library/SKILL.md)。

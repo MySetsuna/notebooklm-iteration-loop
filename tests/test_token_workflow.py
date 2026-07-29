@@ -14,6 +14,11 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("planning_delta", skill)
         self.assertIn("仅 status 显示 pending/异常", skill)
         self.assertIn("不自动 `codegraph init`", skill)
+        self.assertIn(".iteration/context.json", skill)
+        self.assertIn("iteration_budget.py", skill)
+        self.assertIn("iteration_gate.py", skill)
+        self.assertIn("hypothesis", skill)
+        self.assertIn("Reviewer", skill)
         self.assertNotIn("codegraph_context", skill)
         self.assertNotIn("codegraph_trace", skill)
         self.assertNotIn("docs/LOG.md", skill)
@@ -25,10 +30,11 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("本轮 delta", state)
         self.assertIn("docs/archive/", workflow)
         self.assertFalse((ROOT / "templates" / "LOG.md").exists())
+        self.assertTrue((ROOT / "templates" / "ITERATION-BUDGET.json").exists())
 
     def test_committed_archive_records_match_schema(self):
         path = ROOT / "docs" / "archive" / "events-2026-07.jsonl"
         records = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
-        self.assertGreaterEqual(len(records), 6)
+        self.assertGreaterEqual(len(records), 7)
         for record in records:
             archive.validate_record(record)

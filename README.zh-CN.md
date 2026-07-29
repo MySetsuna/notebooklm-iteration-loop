@@ -10,6 +10,9 @@
 - 仅 `planning_delta=true`（需求语义、架构边界、质量回归、外部阻塞、里程碑变化）才替换状态源并问
   NotebookLM。
 - 已结束历史写月度 JSONL 分片，仅 tail/type 有界读取。
+- 每轮先编译 `.iteration/context.json`，限定 Agent 可读文件、symbol、测试与约束。
+- `iteration_gate.py` 再硬验显式入口、允许写集、禁止全图/背景复述；`iteration_budget.py` 限探索、CodeGraph 查询、读文件、重试与 token。
+- NotebookLM 仅产 hypothesis/risk/candidate/question，CodeGraph、合同与测试裁决实现。
 - 收益只以 `token-usage --all` 同任务 A/B 实测。
 
 CodeGraph 是否建索引由项目所有者决定；本 Skill 不自动 `init`。
@@ -43,6 +46,9 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 SKILL.md                         # 热路径
 references/                      # 冷路径规约/归档/初始化/深研
 scripts/archive.py               # JSONL append + bounded tail
+scripts/context_compiler.py      # 任务限定最小上下文包
+scripts/iteration_budget.py      # 迭代预算校验
+scripts/iteration_gate.py        # 全图/入口/写集/预算硬闸
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill
 ```

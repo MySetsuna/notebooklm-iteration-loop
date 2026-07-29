@@ -35,6 +35,11 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | `REQ-<...>` | implemented/gap | `<path/symbol>` | `<test/gate>` |
 
+## Known failed approaches（仅记已验证失败）
+
+- `<approach>` — 原因:`<可复核证据>`；替代:`<下一次允许路径>`
+- `_暂无已验证失败路径_`
+
 ## 本轮 delta（每轮仅改此段）
 
 - 变更:`<paths/symbols>`

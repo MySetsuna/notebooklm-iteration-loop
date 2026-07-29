@@ -30,6 +30,12 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md
 ```
 
+迭代控制层:
+
+- 先用 `context_compiler.py` 生成 `.iteration/context.json`；Agent 只读其中允许文件、symbol、测试。
+- 用 `iteration_budget.py check` 检查探索、CodeGraph 查询、读文件、重试与 token 上限；超限停机。
+- 跨模块/高风险任务使用 `agent/<task>` 分支；Reviewer 只审合同、diff、失败知识与验证，不改代码；人工提升回主线。
+
 缺共享质量 CLI 时按 `references/QUALITY-AND-REQUIREMENTS.md` 装到用户/本机全局并复检；
 不得为此改项目 manifest/lockfile，无法全局满足时显式停下裁定。
 

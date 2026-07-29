@@ -29,6 +29,14 @@
 - `docs/archive/events-YYYY-MM.jsonl`：append-only；用 `scripts/archive.py tail` 有界读取。
 - 当前合同留 `docs/iterations/`；结束合同、进度、guidance 不留 Markdown 副本。
 
+## Agent 控制层
+
+- 每轮先生成 `.iteration/context.json`；其 `read_policy.allowed_files`、目标 symbol、测试与约束为 Agent 允许上下文。
+- `scripts/iteration_gate.py` 硬控显式入口、允许写集、禁止全图/背景复述，并调用预算闸；失败即停。
+- NotebookLM 只产 `hypothesis/risk/candidate/question`，不直接决定实现；CodeGraph、合同与测试裁决。
+- 失败路径写入 `PROJECT-STATE` 的 Known failed approaches；只记录有证据者，避免重复试错。
+- 跨模块任务可用 `agent/<task>` 分支；Reviewer 只读审查，人工提升回主线。
+
 ## 人轨
 
 - `docs/` 经 junction 联入 `C:\work-specs\notebooklm-iteration-loop`。

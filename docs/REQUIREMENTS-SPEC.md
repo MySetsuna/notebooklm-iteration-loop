@@ -62,6 +62,18 @@ _无_
   合同完成/不确定时仍全量验证。
 - 追踪:`SKILL.md`、`references/`、`scripts/archive.py`、`templates/`、`tests/`。
 
+### REQ-006 · Agent 上下文编排、预算与失败知识
+
+- 状态:`ACTIVE`
+- 版本:`v1.0.0`
+- 批准依据:`用户明确要求按 Context Compiler、Iteration Budget、Failed Knowledge 方案改动`
+- 行为:每轮先生成任务限定 `.iteration/context.json`，列出允许 files/symbols/tests/constraints；Agent 不得主动探索包外内容。
+  预算以机器可读 JSON 定义 exploration、CodeGraph queries、files、retries、token 上限，超限即停并归档。
+  `PROJECT-STATE` 保存有证据的失败路径；NotebookLM 仅输出 hypothesis/risk/candidate/question，CodeGraph、合同与测试裁决实现。
+- 边界:不自动初始化 CodeGraph；不把上下文包升级为第三份常驻 NotebookLM 来源；不承诺固定 token 节省；不凭模型自述写失败知识。
+- 验收:`context_compiler.py` 只接受显式入口且拒绝越界路径；`iteration_gate.py` 拒绝全图、无入口、越界写与背景复述；预算超限返回 2。
+- 追踪:`SKILL.md`、`scripts/context_compiler.py`、`scripts/iteration_budget.py`、`scripts/iteration_gate.py`、`templates/`、`tests/`。
+
 ## 修订账本 (Revision Ledger)
 
 关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active/Pending。

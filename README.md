@@ -12,6 +12,9 @@ verification, and bounded local history.
 - Skip NotebookLM source replacement/query unless `planning_delta` is true: requirement semantics, architecture
   boundary, quality regression, external block, or milestone changed.
 - Store completed iteration history in monthly JSONL shards and read only bounded tail/type slices.
+- Compile `.iteration/context.json` before exploration; Agent may read only listed files, symbols, tests, constraints.
+- Enforce explicit entries, allowed write paths, no full scan/background recap, and exploration/CodeGraph/file/retry/token limits with `iteration_gate.py`.
+- NotebookLM emits hypothesis/risk/candidate/question only; CodeGraph, contract, and tests decide implementation.
 - Measure gains with `token-usage --all`; do not claim fixed savings.
 
 CodeGraph indexes are the project owner's decision. This Skill never initializes one automatically.
@@ -45,6 +48,9 @@ the Google sign-in is complete. `link-to-doc-library` is optional human-only vau
 SKILL.md                         # short hot path
 references/                      # cold-path governance, archive, init, deep research
 scripts/archive.py               # append + bounded tail JSONL tool
+scripts/context_compiler.py      # task-scoped minimal context package
+scripts/iteration_budget.py       # iteration budget checker
+scripts/iteration_gate.py         # hard scope and budget gate
 templates/                       # project-doc scaffold
 skills/                          # NLM install/refresh and doc-library companions
 ```

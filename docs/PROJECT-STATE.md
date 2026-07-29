@@ -27,12 +27,19 @@ graph TD
 | --- | --- | --- |
 | REQ-001..004 | implemented | references、两只原有脚本、7 unittest |
 | REQ-005 | implemented | 增量流程、archive.py、模板/历史迁移测试 |
+| REQ-006 | implemented | context_compiler.py、iteration_budget.py、iteration_gate.py、失败知识/Reviewer 模板与测试 |
+
+## Known failed approaches
+
+- `_暂无已验证失败路径_`；后续仅写入有命令、退出码或回归证据的失败尝试。
 
 ## 本轮 delta · 2026-07-29
 
 - 变更:批准并实施 REQ-005；主 Skill 分层，删除无条件全图/NotebookLM 往返，新增 JSONL 历史工具。
+- 追加:按用户方案实施 REQ-006；Context Compiler 限定读取面，预算硬闸，失败知识与 Reviewer 只读审查。
+- 再收紧:显式入口、允许写集、禁止全图与背景复述；硬闸拒绝越界动作。
 - 直接影响:文档/脚本/测试；本仓 CodeGraph `status` 显示未初始化，故不作索引结论。
-- planning_delta:true（迭代方法论与归档格式改变）。
+- planning_delta:true（Agent 控制层、入口/写集硬约束改变）。
 - 基线重建:false（无代码图谱可重建）。
-- 验证:`python -m unittest discover -s tests -v`（14 通过）；requirements gate、archive CLI、skill validator、`py_compile` 均退出 0。
+- 验证:`python -m unittest discover -s tests -v`（24 通过）；context compiler/预算/iteration gate CLI、requirements gate、archive CLI、skill validator、`py_compile` 均退出 0。
 - 质量:coverage/E2E/Sonar 仍不适用或未配置；`preflight --strict` 如实报告 `codegraph_index_missing`（索引未初始化），未自动创建索引。
