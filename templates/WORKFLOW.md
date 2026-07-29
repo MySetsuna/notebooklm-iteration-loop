@@ -39,6 +39,10 @@ python <skill>/scripts/requirements_gate.py assert-executable \
   Active/删除须附批准或决定证据。
 - 首轮用 `iteration_budget.py init` 与 `init-usage` 生成 `.iteration/budget.json`、`.iteration/usage.json`；
   每轮按实际工具调用更新 usage，再以 `iteration_budget.py check` 检查上限；超限停机。
+- 默认 `agent_dispatch.enabled:true`；后端:`auto|ridge|native|tmux|serial`。主 Agent 从模板生成单 Worker
+  packet；写任务仅独立 worktree 且写集/独占资源无冲突时并行。Worker 不审批、不扩范围、不调 NLM。
+- Ridge 仅作传输：`submit_dispatched`、`terminalAccepted`、`agentAcknowledged` 均非完成；完成须结构化
+  result 过 `agent_dispatch.py validate-result`，再由主 Agent 联合验证。
 - 跨模块/高风险任务使用 `agent/<task>` 分支；Reviewer 只审合同、diff、失败知识与验证，不改代码；人工提升回主线。
 
 缺共享质量 CLI 时按 `references/QUALITY-AND-REQUIREMENTS.md` 装到用户/本机全局并复检；

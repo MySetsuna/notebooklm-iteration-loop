@@ -19,6 +19,8 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("iteration_gate.py", skill)
         self.assertIn("Reviewer", skill)
         self.assertIn("PENDING-REQUIREMENTS.md", skill)
+        self.assertIn("agent_dispatch.py", skill)
+        self.assertIn("MULTI-AGENT-PROTOCOL.md", skill)
         self.assertNotIn("codegraph_context", skill)
         self.assertNotIn("codegraph_trace", skill)
         self.assertNotIn("planning_delta", skill)
@@ -33,6 +35,8 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("docs/archive/", workflow)
         self.assertFalse((ROOT / "templates" / "LOG.md").exists())
         self.assertTrue((ROOT / "templates" / "ITERATION-BUDGET.json").exists())
+        self.assertTrue((ROOT / "templates" / "AGENT-DISPATCH.json").exists())
+        self.assertTrue((ROOT / "templates" / "AGENT-RESULT.json").exists())
 
     def test_committed_archive_records_match_schema(self):
         path = ROOT / "docs" / "archive" / "events-2026-07.jsonl"

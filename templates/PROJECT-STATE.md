@@ -57,8 +57,11 @@
 - 直接影响:`<impact/affected 或不可判>`
 - 验证:`<命令 + exit + evidence>`
 - 质量:`<计数/相对基线/待处理 ID>`
+- Agent 编排:`<enabled/backend/execution_mode/waves/dispatch_id>`
+- Worker 回收:`<packet/result hash、状态、越界数、主 Agent 联合验证>`
+- Token:`<主从 input/cache_read/cache_write/output/total；无 A/B 则不宣称收益>`
 
 <!-- 以下运行时段由 state_snapshot.py 生成，不写回本文件：
-repository_head / requirements_version / requirements_hash / generated_at /
+repository_head / requirements_version / requirements_hash / pending_hash / decision_hash / generated_at /
 current_git_diff / 非权威 Pending 索引 / 当前决策包
 -->

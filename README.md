@@ -14,6 +14,8 @@ verification, and bounded local history.
   cross-boundary, multi-solution, repeated-failure, milestone, risk, or explicit-user triggers.
 - Store completed iteration history in monthly JSONL shards and read only bounded tail/type slices.
 - Compile `.iteration/context.json` before exploration; Agent may read only listed files, symbols, tests, constraints.
+- Enable bounded orchestration by default. The lead emits per-worker packets with exact Active requirements,
+  CodeGraph facts, scope, baseline, and checks; only isolated, conflict-free waves fan out.
 - Enforce explicit entries, allowed write paths, no full scan/background recap, and exploration/CodeGraph/file/retry/token limits with `iteration_gate.py`.
 - `state_snapshot.py` checks HEAD plus requirement version/hash before a cold-loop call. NotebookLM output remains
   advice until CodeGraph, approved requirements, and deterministic tests verify it.
@@ -43,9 +45,11 @@ the Google sign-in is complete. `link-to-doc-library` is optional human-only vau
 5. Run `iteration_gate.py`; it rejects full scans, missing entries, unlisted reads, unlisted writes, background recaps,
    and budget overruns. Gate failure stops the iteration.
 6. Use only explicit CodeGraph symbol/queries; files and tests do not silently become graph queries.
-7. Implement only within the write set; run affected checks first, then all applicable checks when required.
-8. Reviewer checks contract, context, diff, failed knowledge, and evidence; Reviewer does not edit code.
-9. Stay in the hot loop by default. For an evidenced trigger, build a state snapshot, pass `notebook_gate.py`,
+7. Build `agent_dispatch.py` packets. Use Ridge Agent's Commune, host-native agents, tmux, or serial;
+   transport receipts never count as completion.
+8. Workers implement only within packet scope; the lead validates result hashes and reruns applicable checks.
+9. Reviewer checks contract, context, diff, failed knowledge, and evidence; Reviewer does not edit code.
+10. Stay in the hot loop by default. For an evidenced trigger, build a state snapshot, pass `notebook_gate.py`,
    validate NotebookLM output, then return to code/tests. Append only bounded JSONL history.
 
 Full reconstruction requires an explicit trigger: missing/broken index, architecture or data-model boundary change,
@@ -60,10 +64,12 @@ scripts/archive.py               # append + bounded tail JSONL tool
 scripts/context_compiler.py      # task-scoped minimal context package
 scripts/iteration_budget.py       # iteration budget checker
 scripts/iteration_gate.py         # hard scope and budget gate
+scripts/agent_dispatch.py         # bounded worker packets and result gate
 scripts/requirements_store.py     # split Active/Pending targeted access
 scripts/state_snapshot.py         # runtime PROJECT-STATE source
 scripts/notebook_gate.py          # cold-loop trigger and output contract
 templates/ITERATION-BUDGET.json  # default per-iteration limits
+templates/AGENT-DISPATCH.json    # backend-neutral dispatch manifest
 templates/                       # project-doc scaffold
 skills/                          # NLM install/refresh and doc-library companions
 ```

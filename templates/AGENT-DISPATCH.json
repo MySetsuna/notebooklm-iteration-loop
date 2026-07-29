@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "dispatch": {
+    "enabled": true,
+    "backend": "auto",
+    "max_workers": 3,
+    "max_packet_bytes": 16384,
+    "max_total_packet_bytes": 49152
+  },
+  "tasks": [
+    {
+      "id": "worker-1",
+      "result_path": ".iteration/agents/result-worker-1.json",
+      "objective": "实现一个明确且可独立验证的获批目标",
+      "execution_kind": "write",
+      "isolation": "worktree",
+      "requirements": ["REQ-001"],
+      "symbols": ["TargetSymbol"],
+      "codegraph": {
+        "queries": ["TargetSymbol"],
+        "facts": [
+          {
+            "fact": "TargetSymbol 的直接调用链或影响范围",
+            "evidence": "codegraph:<query or trace reference>"
+          }
+        ]
+      },
+      "files": ["src/target.py"],
+      "tests": ["tests/test_target.py"],
+      "write_paths": ["src/target.py", "tests/test_target.py"],
+      "exclusive_resources": [],
+      "constraints": ["不得扩大已批准范围"],
+      "verification": [
+        {
+          "command": "python -m unittest tests.test_target -q",
+          "expected_exit": 0
+        }
+      ],
+      "depends_on": []
+    }
+  ]
+}

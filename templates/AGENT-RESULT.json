@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "dispatch_id": "<from dispatch-plan.json>",
+  "task_id": "worker-1",
+  "baseline": {
+    "head": "<from worker packet>",
+    "worktree_digest": "<from worker packet>",
+    "codegraph_revision": "<from worker packet>"
+  },
+  "packet_hash": "<from worker packet>",
+  "status": "completed",
+  "summary": "已完成的最小事实摘要",
+  "changed_paths": ["src/target.py", "tests/test_target.py"],
+  "verification": [
+    {
+      "command": "python -m unittest tests.test_target -q",
+      "exit_code": 0,
+      "evidence": {
+        "path": ".iteration/agents/worker-1-test.log",
+        "sha256": "<sha256 of exact log file>"
+      }
+    }
+  ],
+  "token_usage": {
+    "input": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "output": 0,
+    "total": 0
+  },
+  "transport_receipt": {
+    "backend": "ridge",
+    "receipt_id": "",
+    "submit_dispatched": false,
+    "terminal_accepted": false,
+    "agent_acknowledged": false
+  },
+  "result_hash": "<由 agent_dispatch.py finalize-result 写入>"
+}

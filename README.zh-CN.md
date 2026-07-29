@@ -12,6 +12,8 @@
   重复失败、里程碑、高风险或用户明确触发。
 - 已结束历史写月度 JSONL 分片，仅 tail/type 有界读取。
 - 每轮先编译 `.iteration/context.json`，限定 Agent 可读文件、symbol、测试与约束。
+- 默认启用有界编排；主 Agent 将精确 Active REQ、CodeGraph 事实、baseline、读写集与验证命令分成
+  Worker packet，仅隔离且无冲突波次并行。
 - `iteration_gate.py` 再硬验显式入口、允许写集、禁止全图/背景复述；`iteration_budget.py` 限探索、CodeGraph 查询、读文件、重试与 token。
 - `state_snapshot.py` 在冷循环前核对 HEAD 与需求 version/hash；NotebookLM 输出仍须经 CodeGraph、
   获批需求与测试验证。
@@ -40,9 +42,11 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 4. 用显式 `--symbol`、`--file`、`--test`、`--modify` 编译 `.iteration/context.json`。
 5. 运行 `iteration_gate.py`；其拒绝全图、无入口、越界读、越界写、背景复述与预算超限；失败即停。
 6. CodeGraph 只执行显式 symbol/query；文件与测试不自动变图查询。
-7. 仅在写集内改动；先受影响测试，必要时再全量适用验证。
-8. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
-9. 默认留热循环；命中冷闸才生成状态快照、调用 NotebookLM、验输出，再回代码与测试；历史 append JSONL。
+7. 用 `agent_dispatch.py` 制包；后端可取 Ridge Agent's Commune、宿主 native、tmux 或 serial，
+   传输回执不得算完成。
+8. Worker 仅在 packet 写集内改；主 Agent 验 result hash 后重跑适用质量闸。
+9. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
+10. 默认留热循环；命中冷闸才生成状态快照、调用 NotebookLM、验输出，再回代码与测试；历史 append JSONL。
 
 全量重建须有明确触发：索引缺失/损坏、架构或数据模型边界变化、重大分支切换、事实矛盾或项目所有者明确要求。
 
@@ -55,10 +59,12 @@ scripts/archive.py               # JSONL append + bounded tail
 scripts/context_compiler.py      # 任务限定最小上下文包
 scripts/iteration_budget.py      # 迭代预算校验
 scripts/iteration_gate.py        # 全图/入口/写集/预算硬闸
+scripts/agent_dispatch.py        # Worker 制包、并行与结果回收闸
 scripts/requirements_store.py    # Active/Pending 分离的定向读写
 scripts/state_snapshot.py        # 运行时 PROJECT-STATE 来源
 scripts/notebook_gate.py         # 冷循环触发与输出契约闸
 templates/ITERATION-BUDGET.json  # 默认迭代上限
+templates/AGENT-DISPATCH.json    # 后端无关派发清单
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill
 ```

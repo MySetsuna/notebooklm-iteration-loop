@@ -2,8 +2,9 @@
 name: notebooklm-iteration-loop
 description: >
   用 CodeGraph、Codex 与 NotebookLM 低消耗迭代项目；维护获批需求、项目状态快照、需求审批、
-  确定性质量闸、局部代码查询与按条件触发的 NotebookLM 冷循环。当用户要求初始化或运行迭代、
-  规划下一步、整理项目笔记本、分析复杂根因/架构决策，或限制扫描与模型消耗时使用。
+  确定性质量闸、局部代码查询、默认有界多 Agent 编排与按条件触发的 NotebookLM 冷循环。
+  当用户要求初始化或运行迭代、并行派发 Agent、规划下一步、整理项目笔记本、
+  分析复杂根因/架构决策，或限制扫描与模型消耗时使用。
 ---
 
 # CodeGraph + Codex + NotebookLM 低消耗迭代
@@ -18,8 +19,9 @@ description: >
 4. NotebookLM 常驻仅两源：已批准 `REQUIREMENTS-SPEC` 与运行时 `PROJECT-STATE` 快照。
 5. Pending 仅存本地 `PENDING-REQUIREMENTS.md`；不上传、不实施、不进入已批准需求源。
 6. Agent 只读 `.iteration/context.json` 允许集合；每轮受 budget/usage 与 `iteration_gate.py` 约束。
-7. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
-8. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
+7. 主 Agent 保留需求审批、冲突裁决、联合验证、状态、提交与推送权；Worker 不调用 NotebookLM。
+8. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
+9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
 
 ## 开工闸
 
@@ -43,12 +45,27 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
    `iteration_gate.py`。上下文细则见 [`references/CONTEXT-CONTROL.md`](./references/CONTEXT-CONTROL.md)。
 4. 看受控 diff；CodeGraph 依次查目标 symbol → 文件 → 直接调用/依赖 → 当前模块。仅必要时扩相邻模块；
    全仓分析只用于首次、索引异常、重大分支/边界/数据模型变化、事实矛盾或用户明确要求。
-5. 一轮只做一项已批准目标；禁顺带重构、优化、升级、扩范围或改无关文件。
-6. 跑目标测试、相关回归及适用 typecheck/lint/build/runtime；不得凭阅读宣布成功。
-7. 只更新新增事实与状态变化；历史用 `archive.py append`，原始日志留本地/CI。
-8. 再跑 requirements/iteration gate；Reviewer 只读复核合同、diff、失败知识与验证。
+5. 默认运行多 Agent 编排闸；按 [`references/MULTI-AGENT-PROTOCOL.md`](./references/MULTI-AGENT-PROTOCOL.md)
+   制有界 packet。仅安全独立波次并行；否则派一个有界 Worker 或串行。用户可关闭或指定后端。
+6. 一轮只做一项已批准目标；禁顺带重构、优化、升级、扩范围或改无关文件。
+7. 主 Agent 回收结构化 result 后重跑目标测试、相关回归及适用 typecheck/lint/build/runtime；
+   不得凭 Worker 自述或传输回执宣布成功。
+8. 只更新新增事实与状态变化；历史用 `archive.py append`，原始日志留本地/CI。
+9. 再跑 requirements/iteration gate；Reviewer 只读复核合同、diff、失败知识与验证。
 
 默认：局部查询、局部修改、局部验证、**不调用 NotebookLM**。
+
+## 多 Agent 编排
+
+```text
+python <skill>/scripts/agent_dispatch.py build --root <repo> \
+  --manifest .iteration/dispatch.json --output-dir .iteration/agents
+```
+
+默认 `enabled:true`、后端 `auto`；顺序 Ridge Agent's Commune → 宿主 native → tmux → serial。
+写 Worker 仅在独立 worktree 且写集/独占资源无冲突时并行；共享工作区自动串行。
+大包传文件路径或 Ridge stash URI，消息勿复制全文。投递、终端接受、Agent ACK、执行结果、主 Agent 验证
+五层分列；只有匹配 baseline/packet/result hash 且验证证据齐全的 result 可进入主 Agent 联合验证。
 
 ## NotebookLM 冷闸
 

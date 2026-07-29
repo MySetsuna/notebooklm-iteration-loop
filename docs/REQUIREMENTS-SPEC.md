@@ -99,6 +99,16 @@
 - 追踪:`SKILL.md`、`references/HOT-COLD-PROTOCOL.md`、`scripts/state_snapshot.py`、
   `scripts/notebook_gate.py`、`templates/PROJECT-STATE.md`、`tests/`。
 
+### REQ-009 · 有界多 Agent 编排
+
+- 批准依据:`用户要求深入调研并落地；主 Agent 审批派发，携带需求与调用链，Agent's Commune/tmux/宿主 Agent 可配置且默认触发`
+- 状态:`ACTIVE`
+- 版本:`v1.1.0`
+- 行为:默认启用主控—执行 Agent 编排闸。主 Agent 仅派发获批需求，并为每个执行 Agent 生成有界任务包，包含目标、精确 Active REQ、CodeGraph symbol/调用链证据、允许读写路径、约束、验证命令及 HEAD/worktree/CodeGraph 基线。存在至少两个无依赖且安全隔离的任务包时并行；否则退化为一个有界执行 Agent或串行波次。
+- 后端:`auto|ridge|native|tmux|serial` 可由参数或用户要求覆盖；`auto` 按 Ridge Agent's Commune、宿主 native、tmux、serial 探测。投递、终端接受、Agent 确认、结果上报、主 Agent 验证分层记录。
+- 边界:主 Agent 保留审批、冲突裁决、最终验证、状态更新、提交与推送权；Worker 不扩范围、不互相覆盖、不批准需求、不调用 NotebookLM。写任务仅在独立 worktree 且写集/独占资源无冲突时并行。未以同任务 `token-usage --all` A/B 验证前，不宣称节省总 token。
+- 验收:确定性脚本拒绝 Pending/未知需求、陈旧 HEAD/worktree、超限或 hash 不符任务包、并行写集/控制路径/独占资源交叠、残缺结果与伪完成；生成包有字节上限和稳定 hash；结果回收须含 changed paths、验证命令/退出码、本地证据文件 sha256、主从 token 分项及 packet/result hash。Ridge 回执不得被解释为已执行。
+- 追踪:`SKILL.md`、`references/MULTI-AGENT-PROTOCOL.md`、`scripts/agent_dispatch.py`、`templates/AGENT-DISPATCH.json`、`templates/AGENT-RESULT.json`、`tests/test_agent_dispatch.py`。
 ## 修订账本 (Revision Ledger)
 
 关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active。

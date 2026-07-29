@@ -37,6 +37,10 @@
 - `.iteration/budget.json`、`.iteration/usage.json` 分别由 `iteration_budget.py init`、`init-usage`
   首次生成；后者按实际调用维护。
 - `scripts/iteration_gate.py` 硬控显式入口、允许写集、禁止全图/背景复述，并调用预算闸；失败即停。
+- `scripts/agent_dispatch.py` 默认制有界 Worker packet；本仓后端优先宿主 native，Ridge 可用
+  Agent's Commune；写任务无独立 worktree 时串行。
+- Worker result 须匹配 dispatch/packet/baseline/result hash，并带改动路径、验证退出码与
+  `token-usage --all` 分项；主 Agent 仍跑联合回归。
 - `scripts/notebook_gate.py` 仅十类显式触发放行；`state_snapshot.py` 先校验 HEAD 与需求 version/hash。
 - NotebookLM 输出先过结构闸，再由 CodeGraph、合同与测试验证；不得直接决定实现。
 - 失败路径写入 `PROJECT-STATE` 的 Known failed approaches；只记录有证据者，避免重复试错。

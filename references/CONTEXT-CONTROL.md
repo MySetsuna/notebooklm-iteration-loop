@@ -37,6 +37,10 @@ Pending 与 Active 分文件；写入只改列明 ID。Pending 新增不触碰 A
 Agent 只可按 `read_policy` 取上下文。CodeGraph 仅查 `codegraph.queries`，不能把探索结果扩成全仓扫描。
 上下文包为运行时缓存，不上传 NotebookLM，不作第三份常驻真相源。
 
+主 Agent 持 `.iteration/context.json`；Worker 不复制此总包，只持 `agent_dispatch.py` 生成的单任务 packet。
+packet 物化精确 Active REQ、CodeGraph 有界事实/调用链、允许读写路径、约束与验证命令。
+并行、后端及回收细则见 [`MULTI-AGENT-PROTOCOL.md`](./MULTI-AGENT-PROTOCOL.md)。
+
 `codegraph.queries` 只含显式 symbol 与 `--codegraph-query`；files/tests 不自动转成图查询。
 编译器与 `iteration_gate.py` 均拒绝超过 `max.codegraph_queries` 的计划。
 
