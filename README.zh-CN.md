@@ -4,15 +4,17 @@
 
 ## Token 优先
 
-- NotebookLM 常驻仅两源：获批 `REQUIREMENTS-SPEC`、`PROJECT-STATE`。
+- NotebookLM 常驻仅两源：仅含 Active 的 `REQUIREMENTS-SPEC`、运行时 `PROJECT-STATE` 快照；
+  Pending 独立留本地 `PENDING-REQUIREMENTS.md`。
 - 复用 `PROJECT-STATE` 稳定基线；仅查目标 symbol、直接影响、changed files。
 - 仅索引缺失/损坏、架构或数据模型边界、重大分支变化、事实矛盾、用户明确要求时全量重建。
-- 仅 `planning_delta=true`（需求语义、架构边界、质量回归、外部阻塞、里程碑变化）才替换状态源并问
-  NotebookLM。
+- 默认热循环不问 NotebookLM；`notebook_gate.py` 仅放行十类有证据的冲突、跨边界、多方案、
+  重复失败、里程碑、高风险或用户明确触发。
 - 已结束历史写月度 JSONL 分片，仅 tail/type 有界读取。
 - 每轮先编译 `.iteration/context.json`，限定 Agent 可读文件、symbol、测试与约束。
 - `iteration_gate.py` 再硬验显式入口、允许写集、禁止全图/背景复述；`iteration_budget.py` 限探索、CodeGraph 查询、读文件、重试与 token。
-- NotebookLM 仅产 hypothesis/risk/candidate/question，CodeGraph、合同与测试裁决实现。
+- `state_snapshot.py` 在冷循环前核对 HEAD 与需求 version/hash；NotebookLM 输出仍须经 CodeGraph、
+  获批需求与测试验证。
 - 收益只以 `token-usage --all` 同任务 A/B 实测。
 
 CodeGraph 是否建索引由项目所有者决定；本 Skill 不自动 `init`。
@@ -32,15 +34,15 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 
 ## 最短路径
 
-1. 过 Git 新鲜度、Pending 闸。
+1. 过 Git 新鲜度、Active/Pending 双文件闸。
 2. 读 Active、当前合同、稳定状态、少量 JSONL tail。
 3. 复制 `templates/ITERATION-BUDGET.json` 为 `.iteration/budget.json`。
 4. 用显式 `--symbol`、`--file`、`--test`、`--modify` 编译 `.iteration/context.json`。
 5. 运行 `iteration_gate.py`；其拒绝全图、无入口、越界读、越界写、背景复述与预算超限；失败即停。
-6. 判 `planning_delta`；仅查 context 包列出目标，CodeGraph 不得扩张读取面。
+6. CodeGraph 只执行显式 symbol/query；文件与测试不自动变图查询。
 7. 仅在写集内改动；先受影响测试，必要时再全量适用验证。
 8. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
-9. 仅 `planning_delta=true` 往返 NotebookLM；更新 delta 后 append JSONL。
+9. 默认留热循环；命中冷闸才生成状态快照、调用 NotebookLM、验输出，再回代码与测试；历史 append JSONL。
 
 全量重建须有明确触发：索引缺失/损坏、架构或数据模型边界变化、重大分支切换、事实矛盾或项目所有者明确要求。
 
@@ -53,6 +55,9 @@ scripts/archive.py               # JSONL append + bounded tail
 scripts/context_compiler.py      # 任务限定最小上下文包
 scripts/iteration_budget.py      # 迭代预算校验
 scripts/iteration_gate.py        # 全图/入口/写集/预算硬闸
+scripts/requirements_store.py    # Active/Pending 分离的定向读写
+scripts/state_snapshot.py        # 运行时 PROJECT-STATE 来源
+scripts/notebook_gate.py         # 冷循环触发与输出契约闸
 templates/ITERATION-BUDGET.json  # 默认迭代上限
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill

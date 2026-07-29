@@ -20,14 +20,24 @@ def _items(values: Iterable[str]) -> set[str]:
 
 
 def _changed_paths(root: Path) -> set[str]:
-    result = subprocess.run(
+    tracked = subprocess.run(
         ["git", "diff", "HEAD", "--name-only", "--diff-filter=ACMRD"],
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
     )
-    return _items(result.stdout.splitlines()) if result.returncode == 0 else set()
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    changed = _items(tracked.stdout.splitlines()) if tracked.returncode == 0 else set()
+    if untracked.returncode == 0:
+        changed.update(_items(untracked.stdout.splitlines()))
+    return changed
 
 
 def check_context(context: dict[str, Any]) -> list[str]:
@@ -36,7 +46,17 @@ def check_context(context: dict[str, Any]) -> list[str]:
         violations.append("context_schema_invalid")
     if not context.get("task"):
         violations.append("task_missing")
-    if not any(context.get(key) for key in ("symbols", "files", "tests")):
+    requirements = context.get("requirements", {})
+    requirement_ids = requirements.get("ids", []) if isinstance(requirements, dict) else []
+    requirement_records = requirements.get("records", []) if isinstance(requirements, dict) else []
+    if not isinstance(requirement_ids, list) or not isinstance(requirement_records, list):
+        violations.append("requirement_scope_invalid")
+        requirement_ids = []
+        requirement_records = []
+    record_ids = [record.get("id") for record in requirement_records if isinstance(record, dict)]
+    if requirement_records and record_ids != requirement_ids:
+        violations.append("requirement_scope_invalid")
+    if not any(context.get(key) for key in ("symbols", "files", "tests")) and not requirement_ids:
         violations.append("explicit_entry_missing")
     read_policy = context.get("read_policy", {})
     if read_policy.get("deny_unlisted") is not True or not isinstance(read_policy.get("allowed_files"), list):
@@ -47,6 +67,12 @@ def check_context(context: dict[str, Any]) -> list[str]:
     codegraph = context.get("codegraph", {})
     if codegraph.get("full_rebuild") is not False or codegraph.get("mode") != "targeted":
         violations.append("full_scan_forbidden")
+    queries = codegraph.get("queries", [])
+    max_queries = context.get("budget", {}).get("max", {}).get("codegraph_queries")
+    if not isinstance(queries, list) or (
+        isinstance(max_queries, int) and len(queries) > max_queries
+    ):
+        violations.append("codegraph_scope_exceeded")
     response_policy = context.get("response_policy", {})
     if response_policy.get("forbid_background_recap") is not True:
         violations.append("background_recap_forbidden")

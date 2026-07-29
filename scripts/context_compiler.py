@@ -8,6 +8,11 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from .requirements_store import select_records
+except ImportError:  # direct script execution
+    from requirements_store import select_records
+
 SCHEMA_VERSION = 1
 
 
@@ -42,11 +47,15 @@ def compile_context(
     failed_knowledge: Iterable[str] = (),
     modify: Iterable[str] = (),
     budget: dict[str, Any] | None = None,
+    requirements: Iterable[str] = (),
+    requirements_file: str = "docs/REQUIREMENTS-SPEC.md",
+    requirements_max_bytes: int = 16384,
+    codegraph_queries: Iterable[str] = (),
 ) -> dict[str, Any]:
     if not task.strip():
         raise ValueError("task must not be empty")
-    if not any((symbols, files, tests)):
-        raise ValueError("at least one explicit symbol, file, or test is required")
+    if not any((symbols, files, tests, requirements)):
+        raise ValueError("at least one explicit symbol, file, test, or requirement is required")
     if not any(modify):
         raise ValueError("at least one explicit modify path is required")
     normalized_files = [_relative(root, value) for value in files]
@@ -63,7 +72,18 @@ def compile_context(
         if len(allowed_files) > max_files:
             raise ValueError(f"context has {len(allowed_files)} files; budget allows {max_files}")
     normalized_symbols = _items(symbols)
-    queries = _items([*normalized_symbols, *(f"file:{path}" for path in normalized_files)])
+    normalized_requirements = _items(requirements)
+    normalized_requirements_file = _relative(root, requirements_file)
+    requirement_records = (
+        select_records(root / normalized_requirements_file, normalized_requirements, requirements_max_bytes)
+        if normalized_requirements
+        else []
+    )
+    queries = _items([*normalized_symbols, *codegraph_queries])
+    if budget:
+        max_queries = budget.get("max", {}).get("codegraph_queries")
+        if isinstance(max_queries, int) and len(queries) > max_queries:
+            raise ValueError(f"context has {len(queries)} CodeGraph queries; budget allows {max_queries}")
     return {
         "schema_version": SCHEMA_VERSION,
         "task": task.strip(),
@@ -72,6 +92,12 @@ def compile_context(
         "tests": normalized_tests,
         "constraints": _items(constraints),
         "failed_knowledge": _items(failed_knowledge),
+        "requirements": {
+            "source": normalized_requirements_file,
+            "ids": normalized_requirements,
+            "records": requirement_records,
+            "max_bytes": requirements_max_bytes,
+        },
         "codegraph": {
             "mode": "targeted",
             "queries": queries,
@@ -109,6 +135,10 @@ def main() -> None:
     parser.add_argument("--constraint", action="append", default=[])
     parser.add_argument("--failed", action="append", default=[])
     parser.add_argument("--modify", action="append", default=[])
+    parser.add_argument("--requirement", action="append", default=[])
+    parser.add_argument("--requirements-file", default="docs/REQUIREMENTS-SPEC.md")
+    parser.add_argument("--requirements-max-bytes", type=int, default=16384)
+    parser.add_argument("--codegraph-query", action="append", default=[])
     parser.add_argument("--budget", type=Path)
     parser.add_argument("--output", type=Path, default=Path(".iteration/context.json"))
     args = parser.parse_args()
@@ -124,6 +154,10 @@ def main() -> None:
             args.failed,
             args.modify,
             budget,
+            args.requirement,
+            args.requirements_file,
+            args.requirements_max_bytes,
+            args.codegraph_query,
         )
         output = args.output if args.output.is_absolute() else args.root / args.output
         write_context(output, context)

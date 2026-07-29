@@ -121,7 +121,11 @@ def _node_capabilities(root: Path, package: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]:
+def detect(
+    project_root: Path,
+    search_path: str | None = None,
+    require_notebooklm: bool = False,
+) -> dict[str, Any]:
     root = project_root.resolve()
     package = _load_package_json(root)
     node = _node_capabilities(root, package)
@@ -167,6 +171,9 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
         blockers.append("codegraph_index_missing")
     if not native_verifiers:
         blockers.append("project_verifier_not_detected")
+    nlm_cli = _which("nlm", search_path)
+    if require_notebooklm and not nlm_cli:
+        blockers.append("nlm_cli_missing")
 
     return {
         "schema_version": 1,
@@ -175,7 +182,7 @@ def detect(project_root: Path, search_path: str | None = None) -> dict[str, Any]
             "codegraph_cli": codegraph_status != "cli_missing",
             "codegraph_index": codegraph_status == "ready",
             "codegraph_index_status": codegraph_status,
-            "nlm_cli": _which("nlm", search_path),
+            "nlm_cli": nlm_cli,
             "native_verifiers": native_verifiers,
         },
         "quality": {
@@ -202,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--json-out", type=Path)
+    parser.add_argument("--require-notebooklm", action="store_true")
     parser.add_argument(
         "--strict",
         action="store_true",
@@ -209,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    result = detect(args.project_root, os.environ.get("PATH"))
+    result = detect(args.project_root, os.environ.get("PATH"), args.require_notebooklm)
     output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
     print(output)
     if args.json_out:

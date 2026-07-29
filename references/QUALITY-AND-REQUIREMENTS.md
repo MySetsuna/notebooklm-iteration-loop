@@ -14,16 +14,17 @@ NotebookLM 中每个项目常驻且仅常驻两份来源：
 | 来源 | 内容 | 更新时机 |
 | --- | --- | --- |
 | `REQUIREMENTS-SPEC` | 已批准的当前需求；单文件、覆盖替换 | 用户明确批准 Pending 后 |
-| `PROJECT-STATE` | 代码事实、架构、质量遥测、验证与差距 | 每轮验证及 codegraph 刷新后 |
+| `PROJECT-STATE` | 运行快照：稳定正文 + 当前 HEAD/hash/diff/决策包 | 冷闸通过、调用 NotebookLM 前 |
 
-Pending 只存在于本地 `docs/REQUIREMENTS-SPEC.md`，不上传；NotebookLM 继续读取上一版已批准需求。
+Pending 只存在于本地 `docs/PENDING-REQUIREMENTS.md`，不上传；NotebookLM 始终读取无 Pending 的
+已批准需求源。`PROJECT-STATE` 的 Pending 仅为 ID/主题/状态/冻结范围索引。
 迭代报告、原始日志、历史 RFC、指导原文不作常驻来源。
 
 ## 2. 需求范式与审批闸
 
 ### 2.1 模糊需求先范式化
 
-把用户原话写入 Pending，并补齐：
+把用户原话写入本地 Pending 文件，并补齐：
 
 - ID、类型：`NEW | MODIFY | REMOVE | FIX`；
 - 原始意图；
@@ -50,10 +51,14 @@ active ──新修订──> 新 Pending（原 Active 继续生效）
 
 1. 存在 Pending 时，禁止为该 Pending 修改业务代码、生成执行合同、同步需求来源。
 2. “批准”“Approved”等明确同意只批准当前展示过的具体 Pending；模糊肯定不算。
-3. 批准后先把 Pending 融入 Active、更新 Revision Ledger，再上传新来源；确认入库后方删旧来源。
+3. 批准后以一次受控操作写 Active、移除本地 Pending，并追加 Revision Ledger；随后替换已批准需求来源。
 4. 多个 Pending 可并存，但须分别列关联项；冲突时停下请用户裁定。
-5. 运行 `python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md`
-   作机器闸；退出码非 0 则不得开发。
+5. 运行以下机器闸；退出码非 0 则不得执行对应变更：
+
+   ```text
+   python <skill>/scripts/requirements_gate.py assert-executable \
+     --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md
+   ```
 
 ## 3. 本机全局质量工具链
 
@@ -83,7 +88,8 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 3. 安装后用新进程执行 `<command> --version`（Sonar 可用 `-v`），再重跑 preflight。
 4. 全局 CLI 无法满足项目插件/import 解析时，记录限制并请用户裁定；禁止静默退回项目级安装。
 5. 管理员权限、系统 PATH、系统服务、容器、付费 Sonar 服务仍须明确授权；密钥不得落盘。
-6. NotebookLM MCP 缺失或认证坏掉，转配套 `install-notebooklm-mcp`。
+6. 热循环不要求 NotebookLM；冷闸命中后以 `preflight.py --strict --require-notebooklm` 检查，
+   MCP 缺失或认证坏掉才转配套 `install-notebooklm-mcp`。
 7. `.codegraph/` 缺失或 `codegraph status` 非 ready 时依仓库 `AGENTS.md`：要求询问则先问，再运行
    `codegraph init -i`；不得把目录存在误判为可用索引。
 
@@ -92,7 +98,7 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 - Sonar 未配置：可用项目 linter/编译器替代静态闸，但须在状态文档标明缺口；
 - coverage 未配置：测试可继续，迭代不得宣称“覆盖闸已通过”；
 - E2E 不适用：写明理由与等价终态测试；
-- 项目原生测试命令、codegraph、NotebookLM 任一必需能力缺失：阻断循环，不伪造通过。
+- 项目原生测试命令、codegraph 任一必需能力缺失：阻断热循环；NotebookLM 缺失仅阻断冷循环。
 
 ## 4. 质量遥测：只传摘要，不传原始长日志
 

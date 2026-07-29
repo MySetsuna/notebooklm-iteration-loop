@@ -6,27 +6,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import archive  # noqa: E402
+import iteration_budget  # noqa: E402
 
 
 class TokenWorkflowTests(unittest.TestCase):
     def test_hot_skill_is_routed_and_incremental(self):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("planning_delta", skill)
-        self.assertIn("仅 status 显示 pending/异常", skill)
-        self.assertIn("不自动 `codegraph init`", skill)
+        self.assertIn("默认热循环", skill)
+        self.assertIn("notebook_gate.py assert-allowed", skill)
+        self.assertIn("不自动初始化 CodeGraph", skill)
         self.assertIn(".iteration/context.json", skill)
-        self.assertIn("iteration_budget.py", skill)
         self.assertIn("iteration_gate.py", skill)
-        self.assertIn("hypothesis", skill)
         self.assertIn("Reviewer", skill)
+        self.assertIn("PENDING-REQUIREMENTS.md", skill)
         self.assertNotIn("codegraph_context", skill)
         self.assertNotIn("codegraph_trace", skill)
+        self.assertNotIn("planning_delta", skill)
         self.assertNotIn("docs/LOG.md", skill)
 
     def test_templates_keep_current_truth_and_drop_markdown_history(self):
         state = (ROOT / "templates" / "PROJECT-STATE.md").read_text(encoding="utf-8")
         workflow = (ROOT / "templates" / "WORKFLOW.md").read_text(encoding="utf-8")
-        self.assertIn("稳定架构基线", state)
+        self.assertIn("## 架构边界", state)
+        self.assertIn("repository_head", state)
         self.assertIn("本轮 delta", state)
         self.assertIn("docs/archive/", workflow)
         self.assertFalse((ROOT / "templates" / "LOG.md").exists())
@@ -38,3 +40,9 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertGreaterEqual(len(records), 7)
         for record in records:
             archive.validate_record(record)
+
+    def test_usage_initializer_writes_all_zero_metrics(self):
+        self.assertEqual(
+            iteration_budget.DEFAULT_USAGE,
+            {metric: 0 for metric in iteration_budget.METRICS},
+        )

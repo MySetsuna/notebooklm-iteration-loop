@@ -20,6 +20,7 @@ DEFAULT_BUDGET = {
         "token": 80000,
     },
 }
+DEFAULT_USAGE = {metric: 0 for metric in METRICS}
 
 
 def validate_budget(budget: dict[str, Any]) -> None:
@@ -62,6 +63,9 @@ def main() -> None:
     init = subparsers.add_parser("init")
     init.add_argument("--output", type=Path, required=True)
     init.add_argument("--force", action="store_true")
+    init_usage = subparsers.add_parser("init-usage")
+    init_usage.add_argument("--output", type=Path, required=True)
+    init_usage.add_argument("--force", action="store_true")
     validate = subparsers.add_parser("validate")
     validate.add_argument("--budget", type=Path, required=True)
     check = subparsers.add_parser("check")
@@ -69,11 +73,12 @@ def main() -> None:
     check.add_argument("--usage", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.command == "init":
+        if args.command in {"init", "init-usage"}:
             if args.output.exists() and not args.force:
                 raise ValueError(f"refusing to overwrite {args.output}; use --force")
             args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(json.dumps(DEFAULT_BUDGET, indent=2) + "\n", encoding="utf-8")
+            value = DEFAULT_BUDGET if args.command == "init" else DEFAULT_USAGE
+            args.output.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
             result = {"path": args.output.as_posix()}
         elif args.command == "validate":
             budget = _read(args.budget)

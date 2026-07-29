@@ -5,7 +5,7 @@
 - REQ-001：质量遥测有界化并驱动规划候选。
 - REQ-002：Pending 审批与修订关系确定性校验。
 - REQ-004：只读、可扩展、安全的依赖预检。
-- 开工闸:`python scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md`。
+- 开工闸:`python scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md`。
 
 ## 本轮目标（约 2 工程师工作日）
 

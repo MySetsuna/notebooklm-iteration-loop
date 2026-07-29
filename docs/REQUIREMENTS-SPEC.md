@@ -1,10 +1,8 @@
 # notebooklm-iteration-loop · 需求规范
 
-> Pending 未获用户明确批准前，不改对应代码、不生成执行合同、不上传需求来源。
+> NotebookLM 唯一已批准需求合同；Pending 仅存本地 `PENDING-REQUIREMENTS.md`。
 
-## 待审批变更 (Pending Changes)
-
-_无_
+- 需求版本:`v2.0.0`
 
 ## 正式需求 (Active Requirements)
 
@@ -21,10 +19,10 @@ _无_
 ### REQ-002 · 模糊需求范式化与审批
 
 - 状态:`ACTIVE`
-- 版本:`v1.0.0`
-- 行为:模糊新需求或修订先进入单一 `REQUIREMENTS-SPEC.md` Pending；用户明确批准后才生效。
-- 边界:批准前禁止对应业务代码、执行合同与 NotebookLM 需求来源更新；旧 Active 继续生效。
-- 验收:`requirements_gate.py assert-executable` 对 Pending 返回非零；空 Pending 返回 0。
+- 版本:`v2.0.0`
+- 行为:模糊新需求或修订先进入本地 `PENDING-REQUIREMENTS.md`；用户明确批准后才融入本文件。
+- 边界:Pending 完整内容不得进入已批准需求源或 NotebookLM；批准前禁止对应业务代码、执行合同与来源更新。
+- 验收:`requirements_gate.py assert-executable` 同时检查 Active/Pending 两文件；Pending 非空返回非零。
 - 追踪:`scripts/requirements_gate.py`、`tests/test_requirements_gate.py`、
   `templates/REQUIREMENTS-SPEC.md`。
 
@@ -49,16 +47,15 @@ _无_
 ### REQ-005 · 增量认知与有界归档
 
 - 状态:`ACTIVE`
-- 版本:`v1.0.0`
+- 版本:`v2.0.0`
 - 原始 Pending:`PENDING-REQ-20260729-01`
-- 行为:常规轮复用 `PROJECT-STATE` 稳定基线，只按 Git 受控 diff 查询目标 symbol、直接影响与受影响测试；
-  `planning_delta` 为假时不得重建全图、替换状态来源或查询 NotebookLM。历史以分片 JSONL 追加，按尾部/
-  类型有界读取。
+- 行为:常规热循环复用稳定基线，只按任务查询目标 symbol、直接影响与受影响测试；NotebookLM 默认禁用，
+  仅 `notebook_gate.py` 命中批准触发条件才进入冷循环。历史以分片 JSONL 追加，按尾部/类型有界读取。
 - 重建:首次、索引缺失/异常、核心边界/数据模型/重大分支变化或用户明确要求才全量重建；能力以
   `codegraph status` 与 `codegraph explore` 实测为准，不硬编码版本特定 MCP 工具名。
 - 边界:不自动创建 CodeGraph 索引；不降低最终全量验证；不新增第三份状态文档；Active/Pending、当前合同、
   `PROJECT-STATE`、`WORKFLOW` 不转 JSONL；不声明未经 `token-usage --all` A/B 验证的收益。
-- 验收:静态规约按场景加载；状态基线未变时仅更新 delta 尾段；JSONL 不整档反序列化；受影响测试先行、
+- 验收:静态规约按场景加载；NotebookLM 无触发时硬拒绝；JSONL 不整档反序列化；受影响测试先行，
   合同完成/不确定时仍全量验证。
 - 追踪:`SKILL.md`、`references/`、`scripts/archive.py`、`templates/`、`tests/`。
 
@@ -74,6 +71,34 @@ _无_
 - 验收:`context_compiler.py` 只接受显式入口且拒绝越界路径；`iteration_gate.py` 拒绝全图、无入口、越界写与背景复述；预算超限返回 2。
 - 追踪:`SKILL.md`、`scripts/context_compiler.py`、`scripts/iteration_budget.py`、`scripts/iteration_gate.py`、`templates/`、`tests/`。
 
+### REQ-007 · 需求条目有界读写
+
+- 批准依据:`用户明确采用所示方案，并要求写入亦由脚本实现后推进`
+- 状态:`ACTIVE`
+- 版本:`v2.0.0`
+- 行为:`REQUIREMENTS-SPEC.md` 仅承载 Active；`PENDING-REQUIREMENTS.md` 仅承载本地 Pending。每轮以显式 ID
+  选取少量条目；脚本内部解析整文件，仅把选段送入 Agent 上下文。
+- 边界:不得按“最新若干行”推断当前有效需求；Pending 不上传；Active 写入与删除须有明确批准/决定证据。
+- 验收:`requirements_store.py` 拒绝缺失 ID、字节超限、缺字段、空值及占位条目；Pending 写入不改变 Active 文件。
+- 追踪:`scripts/requirements_store.py`、`scripts/context_compiler.py`、`scripts/iteration_gate.py`、`tests/`。
+
+### REQ-008 · 低消耗热/冷迭代协议
+
+- 批准依据:`用户明确回复“按修正版批准并推进”`
+- 状态:`ACTIVE`
+- 版本:`v1.0.0`
+- 行为:事实权威与规范权威分轴；Codex 默认执行局部查询、最小修改和确定性验证的热循环。
+  仅需求冲突、跨架构边界、多方案、两轮失败、证据冲突、状态失配、新候选、里程碑、高风险或用户明确要求
+  可触发 NotebookLM 冷循环。调用前生成含当前 HEAD、需求版本/hash、diff、Pending 索引及有界决策包的
+  `PROJECT-STATE` 运行快照。
+- 边界:NotebookLM 不裁决代码事实、根因、需求批准或质量；输出不得直接实施，须回到代码、CodeGraph、
+  已批准需求与测试验证。动态元数据只置运行快照尾部，不扰 tracked 稳定前缀。
+- 验收:`state_snapshot.py` 拒绝 HEAD/version/需求 hash/Pending hash/current diff 失配，并绑定决策 hash；
+  `notebook_gate.py` 无触发即拒绝，两轮失败须有两个不同失败实验及命令/退出码/证据指针，决策包超限、
+  残缺或快照不含同一决策即拒绝；模板含规定输出合同与停止条件。
+- 追踪:`SKILL.md`、`references/HOT-COLD-PROTOCOL.md`、`scripts/state_snapshot.py`、
+  `scripts/notebook_gate.py`、`templates/PROJECT-STATE.md`、`tests/`。
+
 ## 修订账本 (Revision Ledger)
 
-关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active/Pending。
+关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active。

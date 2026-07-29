@@ -27,13 +27,18 @@
 
 ```text
 python <skill>/scripts/preflight.py --project-root <repo> --strict
-python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md
+python <skill>/scripts/requirements_gate.py assert-executable \
+  --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md
 ```
 
 迭代控制层:
 
-- 先用 `context_compiler.py` 生成 `.iteration/context.json`；Agent 只读其中允许文件、symbol、测试。
-- 用 `iteration_budget.py check` 检查探索、CodeGraph 查询、读文件、重试与 token 上限；超限停机。
+- 先用 `context_compiler.py --requirement REQ-*` 生成 `.iteration/context.json`；Agent 只读其中物化的
+  需求条目及允许文件、symbol、测试，不整读需求文档。
+- 需求读写用 `requirements_store.py read|write`；Pending 置 `PENDING-REQUIREMENTS.md` 且不上传；
+  Active/删除须附批准或决定证据。
+- 首轮用 `iteration_budget.py init` 与 `init-usage` 生成 `.iteration/budget.json`、`.iteration/usage.json`；
+  每轮按实际工具调用更新 usage，再以 `iteration_budget.py check` 检查上限；超限停机。
 - 跨模块/高风险任务使用 `agent/<task>` 分支；Reviewer 只审合同、diff、失败知识与验证，不改代码；人工提升回主线。
 
 缺共享质量 CLI 时按 `references/QUALITY-AND-REQUIREMENTS.md` 装到用户/本机全局并复检；
@@ -50,13 +55,16 @@ python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIR
 
 - notebook_id:`<填入>`
 - 需求来源名:`REQUIREMENTS-SPEC`(仅用户批准后替换)
-- 状态来源名:`PROJECT-STATE`(每轮替换)
+- 状态来源名:`PROJECT-STATE`(仅冷闸通过后，以 `.iteration/PROJECT-STATE.snapshot.md` 替换)
 - 常驻来源数:`2`;其他来源只能临时存在并按 `SKILL.md` 清理
+- 冷闸:`state_snapshot.py build` → `preflight.py --require-notebooklm --strict` →
+  `notebook_gate.py assert-allowed`
 
 ## 目录落点
 
 沿用仓库根目录 `SKILL.md` 的约定;本项目实例见 `docs/`
-(`docs/REQUIREMENTS-SPEC.md`、`docs/PROJECT-STATE.md`、`docs/archive/`、`docs/iterations/`)。
+(`docs/REQUIREMENTS-SPEC.md`、`docs/PENDING-REQUIREMENTS.md`、`docs/PROJECT-STATE.md`、
+`docs/archive/`、`docs/iterations/`)。
 
 ## 人轨:Obsidian / 文档库
 

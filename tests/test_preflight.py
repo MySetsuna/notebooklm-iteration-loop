@@ -38,6 +38,12 @@ class PreflightTests(unittest.TestCase):
             self.assertIn("codegraph_cli_missing", result["blockers"])
             self.assertIn("codegraph_index_missing", result["blockers"])
             self.assertIn("project_verifier_not_detected", result["blockers"])
+            self.assertNotIn("nlm_cli_missing", result["blockers"])
+
+    def test_notebooklm_is_required_only_for_cold_loop(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = detect(Path(directory), search_path="", require_notebooklm=True)
+        self.assertIn("nlm_cli_missing", result["blockers"])
 
     def test_distinguishes_directory_from_ready_codegraph_index(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

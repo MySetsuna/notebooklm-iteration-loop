@@ -3,7 +3,7 @@
 ## 生效需求引用
 
 - `REQ-<...>`:`<目标行为>`
-- 需求闸:`python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md`
+- 需求闸:`python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md`
 
 ## 本轮目标(常态 4–8 个,含 1 条主线)
 
@@ -16,9 +16,10 @@
 - 不做:`<超出本轮范围的事>`
 - 不动:`<不应触碰的模块/文件>`
 - 预期 codegraph 影响:`<符号/调用路径/爆炸半径>`
-- planning_delta:`true/false + 需求/边界/质量/外部阻塞/里程碑依据`
 - 查询预算:`<目标 symbol、changed files、允许 impact/affected；无代码则 skip>`
-- NotebookLM 往返:`<仅 planning_delta=true / skip>`
+- NotebookLM trigger:`<HOT_LOOP_SKIP | 十类 trigger 之一 + 证据>`
+- 决策包/状态快照:`<仅冷闸触发时填写；否则 skip>`
+- NotebookLM 闸:`python <skill>/scripts/notebook_gate.py assert-allowed ...`
 - Context package:`python <skill>/scripts/context_compiler.py --root <repo> --task "..." --output .iteration/context.json`
 - 迭代预算:`python <skill>/scripts/iteration_budget.py check --budget .iteration/budget.json --usage .iteration/usage.json`
 - 硬闸:`python <skill>/scripts/iteration_gate.py --root <repo> --context .iteration/context.json --budget .iteration/budget.json --usage .iteration/usage.json`
