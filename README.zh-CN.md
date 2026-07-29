@@ -34,11 +34,15 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 
 1. 过 Git 新鲜度、Pending 闸。
 2. 读 Active、当前合同、稳定状态、少量 JSONL tail。
-3. `git diff` 判 `planning_delta`；非代码变更不查 CodeGraph。
-4. `codegraph status` 后按需 sync；只 `explore` 目标与直接 impact/affected tests。
-5. 先受影响测试；完成/不确定时全量适用验证。
-6. 边界未变只写状态 delta；`planning_delta=false` 不往返 NotebookLM。
-7. append 一条 JSONL 历史。
+3. 复制 `templates/ITERATION-BUDGET.json` 为 `.iteration/budget.json`。
+4. 用显式 `--symbol`、`--file`、`--test`、`--modify` 编译 `.iteration/context.json`。
+5. 运行 `iteration_gate.py`；其拒绝全图、无入口、越界读、越界写、背景复述与预算超限；失败即停。
+6. 判 `planning_delta`；仅查 context 包列出目标，CodeGraph 不得扩张读取面。
+7. 仅在写集内改动；先受影响测试，必要时再全量适用验证。
+8. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
+9. 仅 `planning_delta=true` 往返 NotebookLM；更新 delta 后 append JSONL。
+
+全量重建须有明确触发：索引缺失/损坏、架构或数据模型边界变化、重大分支切换、事实矛盾或项目所有者明确要求。
 
 ## 布局
 
@@ -49,6 +53,7 @@ scripts/archive.py               # JSONL append + bounded tail
 scripts/context_compiler.py      # 任务限定最小上下文包
 scripts/iteration_budget.py      # 迭代预算校验
 scripts/iteration_gate.py        # 全图/入口/写集/预算硬闸
+templates/ITERATION-BUDGET.json  # 默认迭代上限
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill
 ```

@@ -36,11 +36,17 @@ the Google sign-in is complete. `link-to-doc-library` is optional human-only vau
 
 1. Verify Git freshness and the Pending gate.
 2. Read Active requirements, current contract, stable state, and a bounded archive tail.
-3. Use `git diff` to classify `planning_delta`; skip CodeGraph for non-code changes.
-4. Check `codegraph status`; conditionally sync; use `explore` for target symbols and impact/affected tests only.
-5. Implement and run affected checks first; run full applicable checks before completion or when impact is uncertain.
-6. Update only the state delta unless the stable architecture changed.
-7. Query/replace NotebookLM state only when `planning_delta=true`; append one JSONL history record.
+3. Copy `templates/ITERATION-BUDGET.json` to `.iteration/budget.json`.
+4. Compile `.iteration/context.json` with explicit `--symbol`, `--file`, `--test`, and `--modify` entries.
+5. Run `iteration_gate.py`; it rejects full scans, missing entries, unlisted reads, unlisted writes, background recaps,
+   and budget overruns. Gate failure stops the iteration.
+6. Classify `planning_delta`; only then use CodeGraph targeted queries. Never let exploration expand the context package.
+7. Implement only within the write set; run affected checks first, then all applicable checks when required.
+8. Reviewer checks contract, context, diff, failed knowledge, and evidence; Reviewer does not edit code.
+9. Update only the state delta, query/replace NotebookLM only when `planning_delta=true`, then append JSONL history.
+
+Full reconstruction requires an explicit trigger: missing/broken index, architecture or data-model boundary change,
+major branch change, contradictory facts, or explicit owner request.
 
 ## Layout
 
@@ -51,6 +57,7 @@ scripts/archive.py               # append + bounded tail JSONL tool
 scripts/context_compiler.py      # task-scoped minimal context package
 scripts/iteration_budget.py       # iteration budget checker
 scripts/iteration_gate.py         # hard scope and budget gate
+templates/ITERATION-BUDGET.json  # default per-iteration limits
 templates/                       # project-doc scaffold
 skills/                          # NLM install/refresh and doc-library companions
 ```
