@@ -2,7 +2,7 @@
 
 > NotebookLM 唯一已批准需求合同；Pending 仅存本地 `PENDING-REQUIREMENTS.md`。
 
-- 需求版本:`v2.1.0`
+- 需求版本:`v2.2.0`
 
 ## 正式需求 (Active Requirements)
 
@@ -114,13 +114,15 @@
 
 - 批准依据:`用户要求增加可选子 Skill；需求与已落地实现按 Kiro 格式补记，但不得作为设计或规划依据`
 - 状态:`ACTIVE`
-- 版本:`v1.0.0`
+- 版本:`v1.1.0`
 - 行为:仅用户明确说 `执行Kiro补记` 或调用 `$record-kiro-spec` 时，将已批准需求、已验证代码实现及
   成功验证证据补记至 `.kiro/specs/<name>/requirements.md|design.md|tasks.md`。
 - 边界:该三文件仅供记录与他人工作流对齐，不构成需求合同、设计输入、任务授权、代码事实源或
   NotebookLM 常驻来源；Pending、提案、未实现任务、推测及失败验证不得写入。
-- 验收:子 Skill 禁止隐式调用；脚本仅更新自身标记区块并保留既有 Kiro 内容，拒绝非法 slug、
-  未绑定需求、无证据实现、非零验证及越界目标；任务均为 `[x]` 事后完成项。
+- 验收:子 Skill 禁止隐式调用；先有界抽样目标仓既有 spec，沿用项目本地标题、追踪与元数据惯例；
+  无先例才用官方三件套保底。脚本仅更新自身标记区块并保留既有 Kiro 内容，拒绝非法 slug、
+  未绑定需求、无证据实现、非零验证及越界目标；任务均为 `[x]` 事后完成项。`spec.json` 仅仓内已有
+  先例且目标缺失时生成，既有文件不改。
 - 追踪:`skills/record-kiro-spec/`、`tests/test_record_kiro_spec.py`、`SKILL.md`。
 
 ## 修订账本 (Revision Ledger)

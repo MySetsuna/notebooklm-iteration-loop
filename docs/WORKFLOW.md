@@ -50,7 +50,7 @@
 - 失败路径写入 `PROJECT-STATE` 的 Known failed approaches；只记录有证据者，避免重复试错。
 - 跨模块任务可用 `agent/<task>` 分支；Reviewer 只读审查，人工提升回主线。
 - 可选 Kiro 补记仅以 `执行Kiro补记` 或 `$record-kiro-spec` 触发；写入已批准、已落地、已验证事实，
-  不作设计/规划依据，不进入 NotebookLM 常驻来源。
+  格式先有界抽样目标仓既有 spec、无先例才用官方三件套；不作设计/规划依据，不进入 NotebookLM 常驻来源。
 
 ## 人轨
 

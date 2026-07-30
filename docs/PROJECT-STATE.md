@@ -5,7 +5,7 @@
 
 ## 当前迭代目标
 
-- 实施 `REQ-010 v1.0`：增加显式触发、非权威的 Kiro 事后补记子 Skill。
+- 实施 `REQ-010 v1.1`：Kiro 补记优先沿用目标仓既有 spec 惯例。
 
 ## 已验证代码事实
 
@@ -15,6 +15,7 @@
 - 难度确定性映射 tier/effort；Ridge profile 仅从带 revision 的宿主能力快照解析。
 - 自动后端仅在任务接受前失败方降级；一经接受不得跨后端重派同 packet。
 - `record-kiro-spec` 仅把获批需求、as-built 实现及成功验证写入受管 Kiro 三件套。
+- 格式采用“目标仓本地惯例优先、官方三件套保底”；本地 `spec.json` 只安全补缺，不覆盖。
 
 ## 相关模块与 symbol
 
@@ -27,11 +28,11 @@
 
 - 最近完成:`REQ-008` 确定性热/冷循环。
 - 当前完成:`REQ-009 v1.3` 难度路由、typed profile、后端降级序与防重复重派。
-- 当前完成:`REQ-010 v1.0` 可选 Kiro 对齐记录、幂等受管区块与证据闸。
+- 当前完成:`REQ-010 v1.1` 本地格式探测、pi-web 风格章节与可选 `spec.json`。
 
 ## 验证状态
 
-- 当前阶段:`REQ-010` 实现完成；74 项全量测试、根/子 Skill validator、需求闸均通过。
+- 当前阶段:`REQ-010 v1.1` 实现完成；75 项全量测试、子 Skill validator 与需求闸通过。
 
 ## 当前失败信号与风险
 
@@ -81,7 +82,7 @@ graph TD
 | REQ-007 | implemented | requirements_store.py、显式 requirement context、审批证据与原子写入测试 |
 | REQ-008 | implemented | Pending 拆分、state_snapshot.py、notebook_gate.py、热/冷协议与 49 项全量测试 |
 | REQ-009 | implemented v1.3 | 模型路由、能力 revision、Ridge→tmux→native→serial 降级与防重复重派 |
-| REQ-010 | implemented v1.0 | `record-kiro-spec` 子 Skill、受管三件套生成器与验证测试 |
+| REQ-010 | implemented v1.1 | 项目惯例优先、受管三件套与可选 `spec.json` |
 
 ## Known failed approaches
 

@@ -16,7 +16,13 @@ def valid_record():
         "schema_version": 1,
         "spec_name": "verified-feature",
         "title": "Verified Feature",
+        "language": "en",
+        "recorded_at": "2026-07-30T00:00:00Z",
         "summary": "Approved behavior is implemented.",
+        "boundary": {
+            "in_scope": ["Verified retrospective record"],
+            "out_of_scope": ["Future implementation planning"],
+        },
         "requirements": [
             {
                 "id": "REQ-010",
@@ -66,6 +72,7 @@ class RecordKiroSpecTests(unittest.TestCase):
             self.assertEqual(first, second)
             self.assertTrue(second.startswith("# Existing Kiro content"))
             self.assertEqual(second.count(record_kiro_spec.START), 1)
+            self.assertIn("## Retrospective Alignment Record", second)
             self.assertIn("WHEN the explicit trigger is used THE SYSTEM SHALL write verified facts", second)
             self.assertIn("- [x] 1.", (target / "tasks.md").read_text(encoding="utf-8"))
 
@@ -92,3 +99,18 @@ class RecordKiroSpecTests(unittest.TestCase):
             record_kiro_spec.validate_record(record)
         with self.assertRaisesRegex(ValueError, "managed markers"):
             record_kiro_spec.merge_managed(record_kiro_spec.START, "content")
+
+    def test_uses_local_metadata_convention_without_overwriting_it(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            precedent = root / ".kiro" / "specs" / "existing"
+            precedent.mkdir(parents=True)
+            (precedent / "spec.json").write_text('{"phase":"implemented"}\n', encoding="utf-8")
+
+            paths = record_kiro_spec.build(root, valid_record())
+            metadata = root / ".kiro" / "specs" / "verified-feature" / "spec.json"
+            self.assertIn(metadata, paths)
+            self.assertIn('"phase": "implemented"', metadata.read_text(encoding="utf-8"))
+            original = metadata.read_text(encoding="utf-8")
+            record_kiro_spec.build(root, valid_record())
+            self.assertEqual(original, metadata.read_text(encoding="utf-8"))

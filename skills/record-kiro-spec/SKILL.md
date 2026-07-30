@@ -26,16 +26,24 @@ Pending、提案、未实现任务、NotebookLM 建议及推测，一律不写�
 ## 流程
 
 1. 查 `.kiro/specs/`，复用对应 feature slug；无对应项才取稳定 kebab-case 新名。
-2. 从需求合同提取已批准行为；验收准则改写为 EARS：`WHEN ... THE SYSTEM SHALL ...`。
-3. 从当前代码与验证结果提取 as-built 组件、职责、证据；勿补拟议架构。
-4. 在 `.iteration/kiro-record.json` 写有界清单：
+2. 若仓内已有 spec，最多精读三个相近项的 `requirements.md`、`design.md`、`tasks.md` 及
+   `spec.json`，沿用其标题层级、Objective、追踪字段与语言；勿扫描整棵 `.kiro/specs/`。
+3. 从需求合同提取已批准行为；验收准则改写为 EARS：`WHEN ... THE SYSTEM SHALL ...`。
+4. 从当前代码与验证结果提取 as-built 组件、职责、证据；勿补拟议架构。
+5. 在 `.iteration/kiro-record.json` 写有界清单：
 
 ```json
 {
   "schema_version": 1,
   "spec_name": "feature-slug",
   "title": "Feature title",
+  "language": "zh",
+  "recorded_at": "2026-07-30T00:00:00Z",
   "summary": "已落地能力摘要",
+  "boundary": {
+    "in_scope": ["本次已落地范围"],
+    "out_of_scope": ["本次未改范围"]
+  },
   "requirements": [{
     "id": "REQ-010",
     "title": "Requirement title",
@@ -60,19 +68,25 @@ Pending、提案、未实现任务、NotebookLM 建议及推测，一律不写�
 }
 ```
 
-5. 构建并校验：
+6. 构建并校验：
 
 ```text
 python <skill>/scripts/record_kiro_spec.py build --root <repo> \
   --input <repo>/.iteration/kiro-record.json
 ```
 
-脚本仅替换自身标记区块；保留既有 Kiro 内容。三文件分别表达：
+脚本仅替换自身标记区块；保留既有 Kiro 内容。官方核心约束为三文件；具体标题无仓内先例时采用
+`pi-web` 已验证惯例：Introduction、Boundary Context、Objective、Acceptance Criteria、
+Boundary Commitments、完成任务追踪。三文件分别表达：
 
 - `requirements.md`：已批准用户故事、EARS 验收及合同证据。
 - `design.md`：已落地架构、组件及通过验证；不写未来式方案。
 - `tasks.md`：仅 `[x]` 已完成项及代码证据；不生成待执行项。
 
-6. 只审 `.kiro/specs/<name>/` diff；核对无 Pending、无未验证陈述、无越界覆盖。
+仓内任一同级 spec 已有 `spec.json` 时，新 spec 补同形元数据并标 `phase: implemented`；
+目标已有 `spec.json` 则不改。`brief.md`、`research.md`、`evidence/` 仅在目标项目已有明确强制约定且
+存在对应事实时补，不由脚本默认生成。
+
+7. 只审 `.kiro/specs/<name>/` diff；核对无 Pending、无未验证陈述、无越界覆盖。
 
 若 Kiro 文档与高权威事实冲突，修正文档；不得据其修改需求、代码或测试。

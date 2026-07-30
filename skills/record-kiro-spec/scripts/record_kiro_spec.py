@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 from pathlib import Path
@@ -14,8 +15,14 @@ MAX_INPUT_BYTES = 65536
 SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 REQUIREMENT_ID = re.compile(r"^REQ-[A-Za-z0-9._-]+$")
 NUMBERED_ID = re.compile(r"^\d+(?:\.\d+)*$")
+RECORDED_AT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 START = "<!-- record-kiro-spec:start -->"
 END = "<!-- record-kiro-spec:end -->"
+HEADERS = {
+    "requirements.md": "# Requirements Document",
+    "design.md": "# Design Document",
+    "tasks.md": "# Implementation Plan",
+}
 
 
 def _text(value: Any, field: str) -> str:
@@ -39,7 +46,20 @@ def validate_record(record: dict[str, Any]) -> None:
     if not SLUG.fullmatch(spec_name):
         raise ValueError("spec_name must be kebab-case")
     _text(record.get("title"), "title")
+    _text(record.get("language"), "language")
+    recorded_at = _text(record.get("recorded_at"), "recorded_at")
+    if not RECORDED_AT.fullmatch(recorded_at):
+        raise ValueError("recorded_at must be UTC YYYY-MM-DDTHH:MM:SSZ")
+    try:
+        datetime.datetime.strptime(recorded_at, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as error:
+        raise ValueError("recorded_at must be a valid UTC timestamp") from error
     _text(record.get("summary"), "summary")
+    boundary = record.get("boundary")
+    if not isinstance(boundary, dict):
+        raise ValueError("boundary must be an object")
+    _evidence(boundary.get("in_scope"), "boundary.in_scope")
+    _evidence(boundary.get("out_of_scope"), "boundary.out_of_scope")
 
     requirements = record.get("requirements")
     if not isinstance(requirements, list) or not requirements:
@@ -123,20 +143,23 @@ def validate_record(record: dict[str, Any]) -> None:
 def render(record: dict[str, Any]) -> dict[str, str]:
     validate_record(record)
     requirements = [
-        "# Requirements Document",
-        "",
-        "> Retrospective alignment record; not an implementation authority.",
-        "",
-        f"## {record['title']}",
+        "## Introduction",
         "",
         record["summary"],
+        "",
+        "## Boundary Context",
+        "",
+        "- **In scope**: " + "; ".join(record["boundary"]["in_scope"]),
+        "- **Out of scope**: " + "; ".join(record["boundary"]["out_of_scope"]),
+        "",
+        "## Requirements",
         "",
     ]
     for number, item in enumerate(record["requirements"], 1):
         requirements += [
             f"### Requirement {number}: {item['title']}",
             "",
-            f"**User Story:** {item['user_story']}",
+            f"**Objective:** {item['user_story']}",
             "",
             "#### Acceptance Criteria",
             "",
@@ -152,13 +175,21 @@ def render(record: dict[str, Any]) -> dict[str, str]:
         ]
 
     design = [
-        "# Design Document",
+        "## Overview",
+        "",
+        f"**Purpose**: {record['summary']}",
         "",
         "> As-built retrospective record; proposed design is out of scope.",
         "",
-        "## Overview",
+        "## Boundary Commitments",
         "",
-        record["summary"],
+        "### This Record Covers",
+        "",
+        *[f"- {item}" for item in record["boundary"]["in_scope"]],
+        "",
+        "### Out of Boundary",
+        "",
+        *[f"- {item}" for item in record["boundary"]["out_of_scope"]],
         "",
         "## Implemented Components",
         "",
@@ -178,16 +209,14 @@ def render(record: dict[str, Any]) -> dict[str, str]:
     design.append("")
 
     tasks = [
-        "# Implementation Plan",
-        "",
         "> Retrospective completion record; contains no work authorization.",
         "",
     ]
     for task in record["tasks"]:
         tasks += [
             f"- [x] {task['id']}. {task['description']}",
-            f"  - Requirements: {', '.join(task['requirement_ids'])}",
-            f"  - Evidence: {'; '.join(task['evidence'])}",
+            f"  - _Requirements: {', '.join(task['requirement_ids'])}_",
+            f"  - _Evidence: {'; '.join(task['evidence'])}_",
         ]
     tasks.append("")
     return {
@@ -215,6 +244,46 @@ def merge_managed(existing: str, content: str) -> str:
     return f"{existing.rstrip()}\n\n{block}"
 
 
+def _demote_headings(content: str) -> str:
+    lines = []
+    for line in content.splitlines():
+        if line.startswith("##"):
+            line = "#" + line
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def _managed_content(existing: str, header: str, content: str) -> str:
+    if not existing.strip():
+        return content
+    prefix = existing.split(START, 1)[0].strip() if START in existing else existing.strip()
+    if prefix == header:
+        return content
+    return "## Retrospective Alignment Record\n\n" + _demote_headings(content)
+
+
+def _metadata(record: dict[str, Any]) -> dict[str, Any]:
+    approvals = {"generated": True, "approved": True}
+    return {
+        "feature_name": record["spec_name"],
+        "created_at": record["recorded_at"],
+        "updated_at": record["recorded_at"],
+        "language": record["language"],
+        "phase": "implemented",
+        "approvals": {
+            "requirements": approvals.copy(),
+            "design": approvals.copy(),
+            "tasks": approvals.copy(),
+        },
+        "ready_for_implementation": False,
+        "bookkeeping": {
+            "action": "retrospective alignment record",
+            "basis": "approved requirements and verified as-built evidence",
+            "caveat": "non-authoritative; must not drive implementation",
+        },
+    }
+
+
 def build(root: Path, record: dict[str, Any]) -> list[Path]:
     rendered = render(record)
     root = root.resolve()
@@ -226,11 +295,23 @@ def build(root: Path, record: dict[str, Any]) -> list[Path]:
     for name, content in rendered.items():
         path = target / name
         existing = path.read_text(encoding="utf-8") if path.exists() else ""
-        updated = merge_managed(existing, content)
+        header = HEADERS[name]
+        body = _managed_content(existing, header, content)
+        base = existing if existing.strip() else f"{header}\n\n"
+        updated = merge_managed(base, body)
         temporary = path.with_suffix(path.suffix + ".tmp")
         temporary.write_text(updated, encoding="utf-8", newline="\n")
         temporary.replace(path)
         written.append(path)
+    metadata = target / "spec.json"
+    has_local_metadata = any(path.parent != target for path in (root / ".kiro" / "specs").glob("*/spec.json"))
+    if has_local_metadata and not metadata.exists():
+        metadata.write_text(
+            json.dumps(_metadata(record), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        written.append(metadata)
     return written
 
 
