@@ -4,8 +4,8 @@ description: >
   在一台设备上安装并认证 notebooklm-mcp（NotebookLM MCP 服务器），接入 Codex / Claude Code
   等宿主。当用户说「装 notebooklm mcp / 接入 NotebookLM / 在这台电脑上配置 notebooklm-mcp /
   把 NotebookLM 接进 Codex / notebooklm 认证失败要重新登录」时使用；notebooklm-iteration-loop
-  发现 MCP 未装、未连或 cookie 失效时也必须触发本 skill。核心难点是设备可能需要代理才能访问
-  Google，且各设备代理地址/端口不同——本 skill 会引导自查或让用户提供代理，并用「外部 CDP」法
+  发现 MCP 未装、未连或 cookie 失效时也必须触发本 skill。当前系统固定可通代理为
+  `http://127.0.0.1:51081`；如用户明确给出新代理才覆盖。认证使用「外部 CDP」法
   在不改系统代理的前提下完成 Google 登录抓取 cookie。cookie 约 2–4 周过期，过期后同样用本 skill
   重新认证。
 ---
@@ -27,7 +27,7 @@ description: >
 > - 但只要给 `nlm login` 传一个**非默认**的 `--cdp-url`（≠ `http://127.0.0.1:18800`），它就切换到**外部 CDP 模式**（`extract_cookies_via_existing_cdp`）：不自己开浏览器，而是连到我们已经启动好的、带代理的 Chrome 去抽 cookie。这就是我们要用的路子。
 > - 工具连本地 CDP（`127.0.0.1:<port>`）时会主动绕过代理，所以即使设了 `HTTP_PROXY` 也不会把 CDP 请求错误地发去代理。
 
-整个流程分 5 步。**不要跳过第 2 步（判断是否需要代理）**——它决定后面走 3A 还是 3B。
+整个流程分 5 步。默认始终携带 `http://127.0.0.1:51081`；仅用户明确要求直连或更换代理时才改变。
 
 ---
 
@@ -47,7 +47,7 @@ description: >
 | 时机 | 动作 |
 | --- | --- |
 | 无 `notebooklm-mcp` 工具 / `nlm` 不在可执行路径 | 完整走步骤 1–5 |
-| `nlm login --check` 失败或 MCP 报未认证 | 重跑步骤 3（3A/3B）+ 步骤 5；无需重装 |
+| `nlm login --check` 失败或 MCP 报未认证 | 重跑步骤 3B + 步骤 5；无需重装 |
 | 用户只说「装/认证 NotebookLM」 | 只跑本 skill，不进迭代九步 |
 
 **阻断主环**：未装妥或未认证成功时，**不要**假装能 `notebook_query` / `source_add`。
@@ -71,20 +71,21 @@ $BIN = "$env:USERPROFILE\.local\bin"
 
 ---
 
-## 步骤 2：判断本机是否需要代理（关键分叉）
+## 步骤 2：验证固定代理（关键前置）
 
-先测试**不经代理**能否访问 Google。返回 `204`（或任意 2xx/3xx）= 直连可用；超时/失败 = 需要代理。
+先验证固定代理能否访问 Google；不要因直连失败而切掉代理。
 
 ```powershell
-curl.exe -s -o NUL -w "direct -> %{http_code}`n" --noproxy '*' --max-time 10 https://www.google.com/generate_204
+`$PROXY = "http://127.0.0.1:51081"`
+curl.exe -s -o NUL -w "via proxy -> %{http_code}`n" -x $PROXY --max-time 15 https://www.google.com/generate_204
 ```
 
-- 返回 `204`/`200`/`3xx` → **走步骤 3A（直连认证）**，简单很多。
-- 超时 / `000` / 连接失败 → **走步骤 3B（代理认证）**。
+- 返回 `204`/`200`/`3xx` → **走步骤 3B（代理认证）**。
+- 超时 / `000` / 连接失败 → 停止并诊断代理；不得静默改走无代理认证。
 
 ---
 
-## 步骤 3A：直连认证（无需代理）
+## 步骤 3A：直连认证（仅用户明确要求）
 
 直接用内置流程，它会弹出浏览器让用户登录 Google：
 
@@ -102,7 +103,8 @@ curl.exe -s -o NUL -w "direct -> %{http_code}`n" --noproxy '*' --max-time 10 htt
 
 ### 3B-1　确定代理地址/端口
 
-**各设备不同，必须先查清。** 依次尝试自查，查不到就直接问用户。
+本机已验证固定代理为 `http://127.0.0.1:51081`，默认不得改写。仅用户明确给出新值时设置
+`$PROXY`，并先验证其连通性：
 
 ```powershell
 Write-Output "=== 代理环境变量 ==="
@@ -124,45 +126,28 @@ Get-Process -ErrorAction SilentlyContinue |
 ```
 
 判读：
-- 环境变量 `HTTP_PROXY` 有值（如 `http://127.0.0.1:1081`）→ 直接用它。
+- 固定代理 `http://127.0.0.1:51081` → 直接使用；环境变量不得覆盖它。
 - 只看到监听端口：`1080` 多为 **SOCKS5**，`108x`/`789x`/`108xx` 多为 **HTTP**。Clash/Verge 常见 HTTP `7890`/`7897`，v2rayN 常见 `10809`(HTTP)/`10808`(SOCKS)。
-- **都查不到，或不确定 → 直接问用户**：「请给我你本机代理的类型和地址端口，例如 `http://127.0.0.1:7890` 或 `socks5://127.0.0.1:1080`。」不要瞎猜后硬试。
+- 只有用户明确要求更换代理时才询问新地址；默认固定值不可被环境变量静默覆盖。
 
-得到候选后，**先验证它真能到 Google 再往下走**（把 `PROXY` 换成实际值，如 `http://127.0.0.1:1081`）：
+得到明确代理后，**先验证它真能到 Google 再往下走**：
 
 ```powershell
-$PROXY = "http://127.0.0.1:1081"   # ← 换成本机实际代理
+$PROXY = "http://127.0.0.1:51081"
 curl.exe -s -o NUL -w "via proxy -> %{http_code}`n" -x $PROXY --max-time 15 https://www.google.com/generate_204
 ```
 
-期望 `204`。若失败，换候选/问用户，直到通为止。（SOCKS 代理用 `socks5://host:port`。）
+期望 `204`。若失败，停止认证并报告代理不可达；不得静默回退直连。
 
 ### 3B-2　用代理 + 调试端口启动一个独立 Chrome
 
 选一个调试端口，**避开 `9222`（chrome-devtools MCP 常用）和 `18800`（nlm 内置哨兵值，用了会退回非外部模式）**。默认用 `19222`，被占就换。
 
 ```powershell
-$PROXY = "http://127.0.0.1:1081"                                   # ← 本机代理
-$PORT  = 19222
-$CHROME = @(
-  "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-  "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-  "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
-$PROFILE = "$env:TEMP\nlm-chrome-auth"                             # 全新隔离 profile，别用日常 profile
-
-$chromeArgs = @(
-  "--proxy-server=$PROXY",
-  "--remote-debugging-port=$PORT",
-  "--remote-allow-origins=*",          # 现代 Chrome 需要它，否则 CDP 握手被拒
-  "--user-data-dir=$PROFILE",          # 必须独立目录，否则会并进已开的 Chrome、调试端口失效
-  "--no-first-run", "--no-default-browser-check",
-  "https://notebooklm.google.com"
-)
-$p = Start-Process -FilePath $CHROME -ArgumentList $chromeArgs -PassThru
-"Chrome PID=$($p.Id)  port=$PORT"
-Start-Sleep 4
-curl.exe -s --noproxy '*' --max-time 8 "http://127.0.0.1:$PORT/json/version"   # 应返回 Browser/webSocketDebuggerUrl 的 JSON
+python <iteration-loop>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py launch `
+  --proxy http://127.0.0.1:51081 --cdp-port 19222
+python <iteration-loop>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py status `
+  --cdp-url http://127.0.0.1:19222
 ```
 
 确认这个浏览器**通过代理真的打开了 Google**（而不是错误页）：
@@ -173,7 +158,7 @@ Start-Sleep 3
   Where-Object { $_.type -eq 'page' } | Select-Object title, url | Format-List
 ```
 
-看到 `accounts.google.com`（Google 登录页）或 `notebooklm.google.com` 就对了。若是 Chrome 错误页 → 代理不通，回 3B-1。
+看到 `accounts.google.com`（Google 登录页）、`notebook.google.com` 或 `Gemini Notebook` 就对了。若是 Chrome 错误页 → 代理不通，回 3B-1。
 
 ### 3B-3　让用户登录，再抽 cookie
 
@@ -182,7 +167,9 @@ Start-Sleep 3
 **等用户确认「登录好了」之后**再抽取（这样没有倒计时压力）：
 
 ```powershell
-& "$env:USERPROFILE\.local\bin\nlm.exe" login --cdp-url "http://127.0.0.1:$PORT"
+& "$env:APPDATA\uv\tools\notebooklm-mcp-cli\Scripts\python.exe" `
+  "<iteration-loop>\skills\refresh-notebooklm-auth\scripts\save_external_cdp_auth.py" `
+  --cdp-url "http://127.0.0.1:19222"
 ```
 
 成功会打印 `✓ Successfully authenticated!` + 账号 + cookie 数。cookie 落盘在 `~\.notebooklm-mcp-cli\profiles\default`。
@@ -206,7 +193,7 @@ if ($c) { taskkill /PID (($c | Select-Object -First 1).OwningProcess) /T /F }
 
 ```powershell
 $NLM = "$env:USERPROFILE\.local\bin\notebooklm-mcp.exe"
-$PROXY = "http://127.0.0.1:1081"   # ← 本机代理；直连则省略全部 -e
+$PROXY = "http://127.0.0.1:51081"
 $GROK = "$env:USERPROFILE\.grok\bin\grok.exe"
 ```
 
@@ -254,7 +241,7 @@ Codex mcp list | Select-String notebooklm                                  # Cod
 
 ## 重新认证（cookie 过期，约 2–4 周）
 
-现象：`nlm login --check` 报失效，或 MCP 调用返回未认证。**直接重跑步骤 3（3A 或 3B）即可**，无需重装、无需重新注册 MCP。需代理的机器走 3B 那套「起代理 Chrome → 登录 → `nlm login --cdp-url`」。
+现象：`nlm login --check` 报失效，或 MCP 调用返回未认证。**直接重跑步骤 3B + 步骤 5 即可**，无需重装、无需重新注册 MCP。使用固定代理 Chrome → 登录 → `save_external_cdp_auth.py`，避免 `nlm login --cdp-url` 的 300 秒假等待。
 
 ---
 
@@ -262,9 +249,9 @@ Codex mcp list | Select-String notebooklm                                  # Cod
 
 | 现象 | 处理 |
 |---|---|
-| `nlm login` 卡「Waiting for sign-in」超时 | 多半需要代理 → 改走步骤 3B |
+| `nlm login` 卡「Waiting for sign-in」超时 | 使用固定代理 `nlm_auth_flow.py launch` + 外部 CDP 提取 |
 | `Cannot connect to CDP endpoint` | 临时 Chrome 没起来或端口不对；确认 `/json/version` 能返回 JSON，`--remote-allow-origins=*` 是否带上 |
-| CDP 里 Chrome 停在错误页 | 代理不通 → 回 3B-1 重新确认代理并 `curl -x` 验证到 Google |
+| CDP 里 Chrome 停在错误页 | 代理不通 → 回 3B-1 重新确认 `http://127.0.0.1:51081` 并 `curl -x` 验证到 Google |
 | `--remote-debugging-port` 不生效/端口无监听 | 没用独立 `--user-data-dir`，被并进已开的 Chrome；换个新目录重启 |
 | 注册用了 `18800` 端口做 cdp-url | 那是内置哨兵值，会退回非外部模式；换 `19222` 等 |
 | MCP 连上但调用报错/连不上 Google | 代理没进 MCP 配置 → 按步骤 4「需要代理」版本重注册（`-e HTTP_PROXY/HTTPS_PROXY`） |
