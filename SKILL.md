@@ -24,6 +24,8 @@ description: >
 9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
 10. `.kiro/specs/` 仅作事后对齐记录，不作需求、设计、规划或实现权威。
 11. 每项用户任务须先绑定请求 intake；空 Pending 文件不再足以证明任务已获批准。
+12. 文档统一 UTF-8 无 BOM；Windows PowerShell 5.1 读取须显式用
+    `Get-Content -Encoding UTF8`，不得以默认 ANSI 解码所得文本回写。
 
 ## 请求入口闸
 

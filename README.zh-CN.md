@@ -33,6 +33,9 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/record-kiro-spec ~/.claude/skills/
 ```
 
+文档统一为 UTF-8 无 BOM。Windows PowerShell 5.1 读取时须用
+`Get-Content -Encoding UTF8`；默认 ANSI 解码会显示乱码，勿将其结果回写。
+
 `install-notebooklm-mcp` 负责安装/认证；`refresh-notebooklm-auth` 在外部 CDP 已登录后刷新凭据；
 `link-to-doc-library` 仅供人眼文档库联接。`record-kiro-spec` 仅以 `执行Kiro补记` 或
 `$record-kiro-spec` 显式触发，把获批需求与已验证实现补记为非权威 Kiro 三件套。

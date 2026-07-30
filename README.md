@@ -35,6 +35,9 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/record-kiro-spec ~/.claude/skills/
 ```
 
+Files use UTF-8 without BOM. In Windows PowerShell 5.1, read them with
+`Get-Content -Encoding UTF8`; the default ANSI decoding corrupts CJK display and must not be written back.
+
 `install-notebooklm-mcp` installs/authenticates NLM. `refresh-notebooklm-auth` repairs external-CDP auth after
 the Google sign-in is complete. `link-to-doc-library` is optional human-only vault linking.
 `record-kiro-spec` runs only for `执行Kiro补记` or explicit `$record-kiro-spec`; it records approved

@@ -33,6 +33,18 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertNotIn("paneId\":\"", skill)
         self.assertIn("执行Kiro补记", skill)
         self.assertIn("record-kiro-spec", skill)
+        self.assertIn("Get-Content -Encoding UTF8", skill)
+
+    def test_markdown_is_strict_utf8_without_mojibake(self):
+        mojibake = ("锟斤拷", "鈥攖", "鈹溾攢", "鎵ц", "琛ヨ")
+        for path in ROOT.rglob("*.md"):
+            with self.subTest(path=path.relative_to(ROOT)):
+                raw = path.read_bytes()
+                self.assertFalse(raw.startswith(b"\xef\xbb\xbf"))
+                text = raw.decode("utf-8")
+                self.assertNotIn("\ufffd", text)
+                for marker in mojibake:
+                    self.assertNotIn(marker, text)
 
     def test_templates_keep_current_truth_and_drop_markdown_history(self):
         state = (ROOT / "templates" / "PROJECT-STATE.md").read_text(encoding="utf-8")
