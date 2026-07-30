@@ -5,7 +5,7 @@
 
 ## 当前迭代目标
 
-- 实施 `REQ-009 v1.3`：按难度路由模型，并固定 Ridge→tmux→native sub-agent→serial 降级序。
+- 实施 `REQ-010 v1.0`：增加显式触发、非权威的 Kiro 事后补记子 Skill。
 
 ## 已验证代码事实
 
@@ -14,6 +14,7 @@
 - `agent_dispatch.py` 已实现 baseline/packet/result hash、DAG 波次、写集/资源/隔离闸与回收计量。
 - 难度确定性映射 tier/effort；Ridge profile 仅从带 revision 的宿主能力快照解析。
 - 自动后端仅在任务接受前失败方降级；一经接受不得跨后端重派同 packet。
+- `record-kiro-spec` 仅把获批需求、as-built 实现及成功验证写入受管 Kiro 三件套。
 
 ## 相关模块与 symbol
 
@@ -26,10 +27,11 @@
 
 - 最近完成:`REQ-008` 确定性热/冷循环。
 - 当前完成:`REQ-009 v1.3` 难度路由、typed profile、后端降级序与防重复重派。
+- 当前完成:`REQ-010 v1.0` 可选 Kiro 对齐记录、幂等受管区块与证据闸。
 
 ## 验证状态
 
-- 当前阶段:实现完成；71 项全量测试、其中 `agent_dispatch` 22 项，以及复杂+xhigh profile 前向制包均通过。
+- 当前阶段:`REQ-010` 实现完成；74 项全量测试、根/子 Skill validator、需求闸均通过。
 
 ## 当前失败信号与风险
 
@@ -44,6 +46,7 @@
 - 编排:默认过调度闸；主 Agent 保留审批/联合验证/提交权；Worker 不调 NLM；共享工作区写任务串行。
 - 模型:主 Agent 标难度；profile/effort 由宿主能力快照解析并绑定 revision；Worker 不自提级。
 - 后端:auto 严格 Ridge→tmux→native sub-agent→serial；任务接受后禁降级重派。
+- Kiro:`执行Kiro补记` 方触发；三件套仅为非权威事后副本，不进入主循环事实链。
 - 核心落点:`SKILL.md` 负责最短路径；`references/` 承载冷路径；`scripts/requirements_gate.py`、
   `scripts/requirements_store.py`、`scripts/preflight.py`、`scripts/archive.py` 为确定性工具。
 
@@ -78,6 +81,7 @@ graph TD
 | REQ-007 | implemented | requirements_store.py、显式 requirement context、审批证据与原子写入测试 |
 | REQ-008 | implemented | Pending 拆分、state_snapshot.py、notebook_gate.py、热/冷协议与 49 项全量测试 |
 | REQ-009 | implemented v1.3 | 模型路由、能力 revision、Ridge→tmux→native→serial 降级与防重复重派 |
+| REQ-010 | implemented v1.0 | `record-kiro-spec` 子 Skill、受管三件套生成器与验证测试 |
 
 ## Known failed approaches
 

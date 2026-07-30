@@ -2,7 +2,7 @@
 
 > NotebookLM 唯一已批准需求合同；Pending 仅存本地 `PENDING-REQUIREMENTS.md`。
 
-- 需求版本:`v2.0.0`
+- 需求版本:`v2.1.0`
 
 ## 正式需求 (Active Requirements)
 
@@ -109,6 +109,20 @@
 - 边界:主 Agent保留难度裁定、审批、冲突裁决、最终验证、状态、提交与推送权；用户可覆盖难度，但 Worker 不自提级、不扩范围、不批准需求、不调用 NotebookLM。写任务仅在独立 worktree 且写集/资源无冲突时并行。两轮局部失败、跨架构边界、证据冲突、高风险或用户指定方可由主 Agent 新开更高 profile Worker；禁止静默原地切模。未以同任务 `token-usage --all` A/B 验证前，不宣称节省总 token。
 - 验收:脚本拒绝 Pending/未知需求、陈旧 baseline、非法难度、缺失/陈旧能力快照、无匹配 tier/effort 的 profile、超限或 hash 不符任务包、并行冲突、残缺结果与伪完成。plan 固定 Ridge→tmux→native→serial 顺序及接受前降级规则；packet 绑定难度、目标 tier/effort、resolved profile 与 capability revision；结果回收须含实际 profile/model/effort、changed paths、验证退出码、证据 sha256、token 分项及 packet/result hash；实际执行配置与 packet 不符即拒绝。Ridge 回执不得解释为已执行。
 - 追踪:`SKILL.md`、`references/MULTI-AGENT-PROTOCOL.md`、`scripts/agent_dispatch.py`、`templates/AGENT-DISPATCH.json`、`templates/AGENT-RESULT.json`、`tests/test_agent_dispatch.py`。
+
+### REQ-010 · 可选 Kiro 事后补记
+
+- 批准依据:`用户要求增加可选子 Skill；需求与已落地实现按 Kiro 格式补记，但不得作为设计或规划依据`
+- 状态:`ACTIVE`
+- 版本:`v1.0.0`
+- 行为:仅用户明确说 `执行Kiro补记` 或调用 `$record-kiro-spec` 时，将已批准需求、已验证代码实现及
+  成功验证证据补记至 `.kiro/specs/<name>/requirements.md|design.md|tasks.md`。
+- 边界:该三文件仅供记录与他人工作流对齐，不构成需求合同、设计输入、任务授权、代码事实源或
+  NotebookLM 常驻来源；Pending、提案、未实现任务、推测及失败验证不得写入。
+- 验收:子 Skill 禁止隐式调用；脚本仅更新自身标记区块并保留既有 Kiro 内容，拒绝非法 slug、
+  未绑定需求、无证据实现、非零验证及越界目标；任务均为 `[x]` 事后完成项。
+- 追踪:`skills/record-kiro-spec/`、`tests/test_record_kiro_spec.py`、`SKILL.md`。
+
 ## 修订账本 (Revision Ledger)
 
 关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active。

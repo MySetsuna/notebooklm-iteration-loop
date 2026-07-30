@@ -29,6 +29,8 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("ridge_list_launch_profiles", skill)
         self.assertNotIn("127.0.0.1", skill)
         self.assertNotIn("paneId\":\"", skill)
+        self.assertIn("执行Kiro补记", skill)
+        self.assertIn("record-kiro-spec", skill)
 
     def test_templates_keep_current_truth_and_drop_markdown_history(self):
         state = (ROOT / "templates" / "PROJECT-STATE.md").read_text(encoding="utf-8")
@@ -50,6 +52,10 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("ridge_capabilities", dispatch)
         self.assertIn("difficulty", dispatch["tasks"][0])
         self.assertIn("model_execution", result)
+        kiro_skill = (ROOT / "skills" / "record-kiro-spec" / "SKILL.md").read_text(encoding="utf-8")
+        kiro_agent = (ROOT / "skills" / "record-kiro-spec" / "agents" / "openai.yaml").read_text(encoding="utf-8")
+        self.assertIn(".kiro/specs/", kiro_skill)
+        self.assertIn("allow_implicit_invocation: false", kiro_agent)
 
     def test_committed_archive_records_match_schema(self):
         path = ROOT / "docs" / "archive" / "events-2026-07.jsonl"

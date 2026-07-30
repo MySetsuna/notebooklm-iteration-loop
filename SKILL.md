@@ -22,6 +22,7 @@ description: >
 7. 主 Agent 保留需求审批、冲突裁决、联合验证、状态、提交与推送权；Worker 不调用 NotebookLM。
 8. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
 9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
+10. `.kiro/specs/` 仅作事后对齐记录，不作需求、设计、规划或实现权威。
 
 ## 开工闸
 
@@ -52,6 +53,8 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
    不得凭 Worker 自述或传输回执宣布成功。
 8. 只更新新增事实与状态变化；历史用 `archive.py append`，原始日志留本地/CI。
 9. 再跑 requirements/iteration gate；Reviewer 只读复核合同、diff、失败知识与验证。
+10. 用户明确说 `执行Kiro补记` 或调用 `$record-kiro-spec` 时，方读取并执行
+    [`skills/record-kiro-spec/SKILL.md`](./skills/record-kiro-spec/SKILL.md)；否则跳过。
 
 默认：局部查询、局部修改、局部验证、**不调用 NotebookLM**。
 
@@ -100,5 +103,6 @@ python <skill>/scripts/notebook_gate.py assert-allowed --root <repo> \
 - `PROJECT-STATE.md`：稳定 tracked 正文；`state_snapshot.py` 在 `.iteration/` 生成动态尾段。
 - `docs/archive/events-YYYY-MM.jsonl`：分片、append-only、有界 tail；不上传。
 - 当前合同与 `WORKFLOW` 保持 Markdown；运行 context/decision/snapshot 不作第三常驻来源。
+- `.kiro/specs/`：可选事后对齐副本；不上传 NotebookLM，不反向驱动主流程。
 
 出现 Pending、状态快照失配、触发证据不足、索引矛盾、验证失败、越界写或预算耗尽，即停止相应动作。

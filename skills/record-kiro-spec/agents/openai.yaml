@@ -1,0 +1,7 @@
+interface:
+  display_name: "Record Kiro Spec"
+  short_description: "将已批准需求与已验证实现补记为 Kiro Specs"
+  default_prompt: "Use $record-kiro-spec to record this approved, implemented change under .kiro/specs."
+
+policy:
+  allow_implicit_invocation: false

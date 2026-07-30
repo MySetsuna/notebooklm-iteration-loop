@@ -29,10 +29,12 @@ cp -r notebooklm-iteration-loop ~/.claude/skills/notebooklm-iteration-loop
 cp -r notebooklm-iteration-loop/skills/install-notebooklm-mcp ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/refresh-notebooklm-auth ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
+cp -r notebooklm-iteration-loop/skills/record-kiro-spec ~/.claude/skills/
 ```
 
 `install-notebooklm-mcp` 负责安装/认证；`refresh-notebooklm-auth` 在外部 CDP 已登录后刷新凭据；
-`link-to-doc-library` 仅供人眼文档库联接。
+`link-to-doc-library` 仅供人眼文档库联接。`record-kiro-spec` 仅以 `执行Kiro补记` 或
+`$record-kiro-spec` 显式触发，把获批需求与已验证实现补记为非权威 Kiro 三件套。
 
 ## 最短路径
 
@@ -47,6 +49,7 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 8. Worker 仅在 packet 写集内改；主 Agent 验 result hash 后重跑适用质量闸。
 9. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
 10. 默认留热循环；命中冷闸才生成状态快照、调用 NotebookLM、验输出，再回代码与测试；历史 append JSONL。
+11. 用户说 `执行Kiro补记` 时，方生成 `.kiro/specs/<name>/` 事后对齐记录；不得据其规划实现。
 
 全量重建须有明确触发：索引缺失/损坏、架构或数据模型边界变化、重大分支切换、事实矛盾或项目所有者明确要求。
 
@@ -67,6 +70,7 @@ templates/ITERATION-BUDGET.json  # 默认迭代上限
 templates/AGENT-DISPATCH.json    # 后端无关派发清单
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill
+skills/record-kiro-spec/         # 可选 Kiro 事后补记 Skill
 ```
 
 完整契约见 [SKILL.md](./SKILL.md)。

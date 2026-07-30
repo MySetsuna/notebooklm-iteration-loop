@@ -31,10 +31,13 @@ cp -r notebooklm-iteration-loop ~/.claude/skills/notebooklm-iteration-loop
 cp -r notebooklm-iteration-loop/skills/install-notebooklm-mcp ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/refresh-notebooklm-auth ~/.claude/skills/
 cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
+cp -r notebooklm-iteration-loop/skills/record-kiro-spec ~/.claude/skills/
 ```
 
 `install-notebooklm-mcp` installs/authenticates NLM. `refresh-notebooklm-auth` repairs external-CDP auth after
 the Google sign-in is complete. `link-to-doc-library` is optional human-only vault linking.
+`record-kiro-spec` runs only for `执行Kiro补记` or explicit `$record-kiro-spec`; it records approved
+requirements and verified as-built implementation as non-authoritative Kiro artifacts.
 
 ## Runtime path
 
@@ -73,6 +76,7 @@ templates/ITERATION-BUDGET.json  # default per-iteration limits
 templates/AGENT-DISPATCH.json    # backend-neutral dispatch manifest
 templates/                       # project-doc scaffold
 skills/                          # NLM install/refresh and doc-library companions
+skills/record-kiro-spec/         # optional retrospective Kiro recorder
 ```
 
 See [SKILL.md](./SKILL.md) for the operational contract.

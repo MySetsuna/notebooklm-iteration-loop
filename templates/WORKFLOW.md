@@ -77,6 +77,8 @@ python <skill>/scripts/requirements_gate.py assert-executable \
 ## 人轨:Obsidian / 文档库
 
 - 配套 skill:`link-to-doc-library`(本方法论仓库 `skills/link-to-doc-library/`)
+- 可选对齐 skill:`record-kiro-spec`；仅口令 `执行Kiro补记` 或显式 `$record-kiro-spec` 触发，
+  只记录已批准需求与已验证 as-built 实现，不作规划或事实源
 - 默认库:`C:\work-specs`(工作文档库)
 - 联入源:本项目 `docs/` 绝对路径;junction 名 = 本仓库根目录名
 - **真相仍在 git 下 `docs/`**;vault 仅浏览。agent 查现状不读 vault。
