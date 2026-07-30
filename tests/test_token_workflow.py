@@ -17,6 +17,8 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("不自动初始化 CodeGraph", skill)
         self.assertIn(".iteration/context.json", skill)
         self.assertIn("iteration_gate.py", skill)
+        self.assertIn("assert-task-executable", skill)
+        self.assertIn("requirements_intake.py", skill)
         self.assertIn("Reviewer", skill)
         self.assertIn("PENDING-REQUIREMENTS.md", skill)
         self.assertIn("agent_dispatch.py", skill)
@@ -43,6 +45,7 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertTrue((ROOT / "templates" / "ITERATION-BUDGET.json").exists())
         self.assertTrue((ROOT / "templates" / "AGENT-DISPATCH.json").exists())
         self.assertTrue((ROOT / "templates" / "AGENT-RESULT.json").exists())
+        self.assertTrue((ROOT / "templates" / "REQUIREMENTS-INTAKE.json").exists())
         dispatch = json.loads(
             (ROOT / "templates" / "AGENT-DISPATCH.json").read_text(encoding="utf-8")
         )

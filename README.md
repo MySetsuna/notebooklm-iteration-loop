@@ -14,6 +14,7 @@ verification, and bounded local history.
   cross-boundary, multi-solution, repeated-failure, milestone, risk, or explicit-user triggers.
 - Store completed iteration history in monthly JSONL shards and read only bounded tail/type slices.
 - Compile `.iteration/context.json` before exploration; Agent may read only listed files, symbols, tests, constraints.
+- Bind every task to the current request intake; new/changed/fix/ambiguous work must stop at Pending approval.
 - Enable bounded orchestration by default. The lead emits per-worker packets with exact Active requirements,
   CodeGraph facts, scope, baseline, and checks; only isolated, conflict-free waves fan out.
 - Enforce explicit entries, allowed write paths, no full scan/background recap, and exploration/CodeGraph/file/retry/token limits with `iteration_gate.py`.
@@ -41,8 +42,8 @@ requirements and verified as-built implementation as non-authoritative Kiro arti
 
 ## Runtime path
 
-1. Verify Git freshness and the separate Active/Pending gate.
-2. Read Active requirements, current contract, stable state, and a bounded archive tail.
+1. Save the current request and build intake; stop and display every Pending draft before approval.
+2. Verify task intake, Git freshness, and the separate Active/Pending gate.
 3. Copy `templates/ITERATION-BUDGET.json` to `.iteration/budget.json`.
 4. Compile `.iteration/context.json` with explicit `--symbol`, `--file`, `--test`, and `--modify` entries.
 5. Run `iteration_gate.py`; it rejects full scans, missing entries, unlisted reads, unlisted writes, background recaps,
@@ -70,9 +71,11 @@ scripts/iteration_budget.py       # iteration budget checker
 scripts/iteration_gate.py         # hard scope and budget gate
 scripts/agent_dispatch.py         # bounded worker packets and result gate
 scripts/requirements_store.py     # split Active/Pending targeted access
+scripts/requirements_intake.py    # bind request, draft, and approval chain
 scripts/state_snapshot.py         # runtime PROJECT-STATE source
 scripts/notebook_gate.py          # cold-loop trigger and output contract
 templates/ITERATION-BUDGET.json  # default per-iteration limits
+templates/REQUIREMENTS-INTAKE.json # request-intake decision template
 templates/AGENT-DISPATCH.json    # backend-neutral dispatch manifest
 templates/                       # project-doc scaffold
 skills/                          # NLM install/refresh and doc-library companions

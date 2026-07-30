@@ -12,6 +12,7 @@
   重复失败、里程碑、高风险或用户明确触发。
 - 已结束历史写月度 JSONL 分片，仅 tail/type 有界读取。
 - 每轮先编译 `.iteration/context.json`，限定 Agent 可读文件、symbol、测试与约束。
+- 每项任务先绑定当前请求 intake；新增/修订/Fix 或歧义先展示 Pending，明确批准后方开工。
 - 默认启用有界编排；主 Agent 将精确 Active REQ、CodeGraph 事实、baseline、读写集与验证命令分成
   Worker packet，仅隔离且无冲突波次并行。
 - `iteration_gate.py` 再硬验显式入口、允许写集、禁止全图/背景复述；`iteration_budget.py` 限探索、CodeGraph 查询、读文件、重试与 token。
@@ -38,8 +39,8 @@ cp -r notebooklm-iteration-loop/skills/record-kiro-spec ~/.claude/skills/
 
 ## 最短路径
 
-1. 过 Git 新鲜度、Active/Pending 双文件闸。
-2. 读 Active、当前合同、稳定状态、少量 JSONL tail。
+1. 保存当前请求并生成 intake；`pending` 展示规范稿后停机，`approved` 绑定旧草稿。
+2. 过任务 intake、Git 新鲜度、Active/Pending 双文件闸。
 3. 复制 `templates/ITERATION-BUDGET.json` 为 `.iteration/budget.json`。
 4. 用显式 `--symbol`、`--file`、`--test`、`--modify` 编译 `.iteration/context.json`。
 5. 运行 `iteration_gate.py`；其拒绝全图、无入口、越界读、越界写、背景复述与预算超限；失败即停。
@@ -64,9 +65,11 @@ scripts/iteration_budget.py      # 迭代预算校验
 scripts/iteration_gate.py        # 全图/入口/写集/预算硬闸
 scripts/agent_dispatch.py        # Worker 制包、并行与结果回收闸
 scripts/requirements_store.py    # Active/Pending 分离的定向读写
+scripts/requirements_intake.py   # 当前请求、草稿与批准链绑定
 scripts/state_snapshot.py        # 运行时 PROJECT-STATE 来源
 scripts/notebook_gate.py         # 冷循环触发与输出契约闸
 templates/ITERATION-BUDGET.json  # 默认迭代上限
+templates/REQUIREMENTS-INTAKE.json # 请求入口决策模板
 templates/AGENT-DISPATCH.json    # 后端无关派发清单
 templates/                       # 项目文档脚手架
 skills/                          # NLM 安装/刷新、文档库配套 Skill

@@ -10,8 +10,10 @@ import sys
 from pathlib import Path
 
 try:
+    from .requirements_intake import inspect_manifest
     from .requirements_store import read_records, validate_records
 except ImportError:  # direct script execution
+    from requirements_intake import inspect_manifest
     from requirements_store import read_records, validate_records
 
 PENDING_HEADING = "## 待审批变更 (Pending Changes)"
@@ -67,21 +69,30 @@ def inspect_documents(active_path: Path, pending_path: Path) -> dict[str, object
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("status", "assert-executable"))
+    parser.add_argument("command", choices=("status", "assert-executable", "assert-task-executable"))
     parser.add_argument("--file", type=Path, default=Path("docs/REQUIREMENTS-SPEC.md"))
     parser.add_argument("--pending-file", type=Path, default=Path("docs/PENDING-REQUIREMENTS.md"))
+    parser.add_argument("--request-file", type=Path)
+    parser.add_argument("--intake-file", type=Path)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     if not args.file.is_file() or not args.pending_file.is_file():
         print("requirements file not found", file=sys.stderr)
         return 2
     result = inspect_documents(args.file, args.pending_file)
+    if args.command == "assert-task-executable":
+        if not args.request_file or not args.intake_file:
+            print("task intake and request files are required", file=sys.stderr)
+            return 2
+        intake = inspect_manifest(args.file, args.pending_file, args.request_file, args.intake_file)
+        result["intake"] = intake
+        result["executable"] = bool(result["executable"] and intake["executable"])
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     else:
         state = "executable" if result["executable"] else "blocked"
         print(f"{state}: {', '.join(result['pending_ids']) or 'no pending requirements'}")
-    if args.command == "assert-executable" and not result["executable"]:
+    if args.command.startswith("assert-") and not result["executable"]:
         return 3
     return 0
 

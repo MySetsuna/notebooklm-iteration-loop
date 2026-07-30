@@ -23,12 +23,20 @@
 
 以上必须**全绿**才能进入 NotebookLM 环节(见 `SKILL.md` step 3)。
 
-开工前只读预检:
+每项任务须先保存当前请求、生成 intake，并过：
+
+```text
+python <skill>/scripts/requirements_gate.py assert-task-executable \
+  --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md \
+  --request-file .iteration/request.txt --intake-file .iteration/intakes/INTAKE-ID.json
+```
+
+新增/修订/删除/Fix 或任一歧义 → 写 Pending、展示规范稿、停止；批准须绑定此前 pending intake。
+
+入口闸通过后方作开工预检：
 
 ```text
 python <skill>/scripts/preflight.py --project-root <repo> --strict
-python <skill>/scripts/requirements_gate.py assert-executable \
-  --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md
 ```
 
 迭代控制层:

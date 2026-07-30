@@ -37,6 +37,10 @@ Pending 只存在于本地 `docs/PENDING-REQUIREMENTS.md`，不上传；Notebook
 
 不得把模型推测伪装成用户要求；每项假设须显式列出。
 
+在读取代码或实现前，先为当前请求生成 request-bound intake。空 Pending 只能表示“文件内无记录”，
+不得据此推断当前聊天已获批准。新增/修订/删除/Fix 需求一律先走 Pending；仅完全落在现有 Active
+条款内的任务可分类 `active`。
+
 ### 2.2 Pending 状态机
 
 ```text
@@ -56,9 +60,14 @@ active ──新修订──> 新 Pending（原 Active 继续生效）
 5. 运行以下机器闸；退出码非 0 则不得执行对应变更：
 
    ```text
-   python <skill>/scripts/requirements_gate.py assert-executable \
-     --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md
+   python <skill>/scripts/requirements_gate.py assert-task-executable \
+     --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md \
+     --request-file .iteration/request.txt --intake-file .iteration/intakes/INTAKE-ID.json
    ```
+
+`requirements_intake.py` 绑定当前请求、Active/Pending 内容 hash。批准路径另绑定此前 `pending`
+intake 的 hash、草稿 hash、Pending ID 与批准原话；任一缺失即阻断。脚本不具宿主聊天访问权，
+主 Agent 必须把当前原文置请求文件，不得复用旧请求或伪造批准证据。
 
 ## 3. 本机全局质量工具链
 

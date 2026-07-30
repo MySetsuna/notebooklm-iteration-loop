@@ -3,6 +3,9 @@
 ## 确定性验证
 
 - 需求闸:`python scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md`
+- 任务入口闸:`python scripts/requirements_gate.py assert-task-executable --file docs/REQUIREMENTS-SPEC.md
+  --pending-file docs/PENDING-REQUIREMENTS.md --request-file .iteration/request.txt
+  --intake-file .iteration/intakes/INTAKE-ID.json`
 - 单元测试:`python -m unittest discover -s tests -v`
 - preflight:`python scripts/preflight.py --project-root . --strict`
 - skill 结构:`python <CODEX_HOME>/skills/.system/skill-creator/scripts/quick_validate.py .`
@@ -33,6 +36,8 @@
 
 ## Agent 控制层
 
+- 每项任务先生成 request-bound intake；新需求/修订/Fix 或有歧义者写 Pending、展示后停机。
+  空 Pending 不证明当前请求已批准；批准须绑定此前 intake、草稿 hash、Pending ID 与批准原话。
 - 每轮先生成 `.iteration/context.json`；其 `read_policy.allowed_files`、目标 symbol、测试与约束为 Agent 允许上下文。
 - `.iteration/budget.json`、`.iteration/usage.json` 分别由 `iteration_budget.py init`、`init-usage`
   首次生成；后者按实际调用维护。

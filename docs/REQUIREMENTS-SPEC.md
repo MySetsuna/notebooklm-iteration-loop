@@ -2,7 +2,7 @@
 
 > NotebookLM 唯一已批准需求合同；Pending 仅存本地 `PENDING-REQUIREMENTS.md`。
 
-- 需求版本:`v2.2.0`
+- 需求版本:`v2.3.0`
 
 ## 正式需求 (Active Requirements)
 
@@ -124,6 +124,22 @@
   未绑定需求、无证据实现、非零验证及越界目标；任务均为 `[x]` 事后完成项。`spec.json` 仅仓内已有
   先例且目标缺失时生成，既有文件不改。
 - 追踪:`skills/record-kiro-spec/`、`tests/test_record_kiro_spec.py`、`SKILL.md`。
+
+### REQ-011 · 请求绑定审批入口闸
+
+- 批准依据:`用户确认审批步骤被跳过后明确要求“那现在开始修复吧”；继而要求修复完提交推送并同步`
+- 状态:`ACTIVE`
+- 版本:`v1.0.0`
+- 行为:每项用户任务在任何开工动作前，须生成绑定当前请求 hash 的 intake。完全落在 Active 条款内方可
+  分类 `active`；新增、修订、删除、Fix 或含未决范围/验收/假设者必须写 Pending、展示完整规范稿并停机；
+  用户明确批准该已展示草稿后，方以 `approved` intake 提升并实施。
+- 边界:空 Pending 不构成批准证据；旧 intake、模糊肯定、未展示草稿、模型自判或 NotebookLM 建议不得
+  替代用户批准。脚本无法读取宿主聊天，故须由主 Agent 保存当前请求原文；宿主级强制执行不作虚假承诺。
+- 验收:`requirements_gate.py assert-task-executable` 缺 request/intake 即拒绝；intake 绑定请求、
+  Active、Pending 三 hash。`pending` 永不可执行；`approved` 须绑定此前 pending intake、草稿 hash、
+  Pending ID、Active 结果及批准原话；陈旧/伪完整 manifest、未清 Pending、文档漂移均拒绝。
+- 追踪:`SKILL.md`、`references/QUALITY-AND-REQUIREMENTS.md`、`scripts/requirements_intake.py`、
+  `scripts/requirements_gate.py`、`templates/REQUIREMENTS-INTAKE.json`、`tests/test_requirements_intake.py`。
 
 ## 修订账本 (Revision Ledger)
 

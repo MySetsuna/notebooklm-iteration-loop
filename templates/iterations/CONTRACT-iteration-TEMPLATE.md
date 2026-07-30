@@ -3,7 +3,7 @@
 ## 生效需求引用
 
 - `REQ-<...>`:`<目标行为>`
-- 需求闸:`python <skill>/scripts/requirements_gate.py assert-executable --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md`
+- 任务闸:`python <skill>/scripts/requirements_gate.py assert-task-executable --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md --request-file .iteration/request.txt --intake-file .iteration/intakes/INTAKE-ID.json`
 
 ## 本轮目标(常态 4–8 个,含 1 条主线)
 

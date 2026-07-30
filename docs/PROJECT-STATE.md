@@ -5,12 +5,13 @@
 
 ## 当前迭代目标
 
-- 实施 `REQ-010 v1.1`：Kiro 补记优先沿用目标仓既有 spec 惯例。
+- 实施 `REQ-011 v1.0`：请求绑定审批入口闸，堵空 Pending 误放行。
 
 ## 已验证代码事实
 
 - Context Compiler、Iteration Budget、Iteration Gate、JSONL archive 均有 unittest。
 - Active/Pending 已拆为两文件；需求脚本按显式 ID 有界读写。
+- `requirements_intake.py` 绑定当前请求、需求文件、Pending 文件及批准前草稿 hash。
 - `agent_dispatch.py` 已实现 baseline/packet/result hash、DAG 波次、写集/资源/隔离闸与回收计量。
 - 难度确定性映射 tier/effort；Ridge profile 仅从带 revision 的宿主能力快照解析。
 - 自动后端仅在任务接受前失败方降级；一经接受不得跨后端重派同 packet。
@@ -20,6 +21,7 @@
 ## 相关模块与 symbol
 
 - `requirements_store.select_records/apply_operation`
+- `requirements_intake.build_manifest/inspect_manifest`
 - `state_snapshot.build_snapshot/validate_snapshot`
 - `notebook_gate.evaluate/validate_notebook_output`
 - `agent_dispatch.build_plan/validate_result/validate_batch`
@@ -29,10 +31,12 @@
 - 最近完成:`REQ-008` 确定性热/冷循环。
 - 当前完成:`REQ-009 v1.3` 难度路由、typed profile、后端降级序与防重复重派。
 - 当前完成:`REQ-010 v1.1` 本地格式探测、pi-web 风格章节与可选 `spec.json`。
+- 当前完成:`REQ-011 v1.0` 请求 intake、Pending 停机与批准链硬闸。
 
 ## 验证状态
 
-- 当前阶段:`REQ-010 v1.1` 实现完成；75 项全量测试、子 Skill validator 与需求闸通过。
+- 当前阶段:`REQ-011 v1.0` 实现完成；79 项全量测试、真实任务 intake、Skill validator、
+  strict preflight 与 diff checker 通过。
 
 ## 当前失败信号与风险
 
@@ -48,6 +52,7 @@
 - 模型:主 Agent 标难度；profile/effort 由宿主能力快照解析并绑定 revision；Worker 不自提级。
 - 后端:auto 严格 Ridge→tmux→native sub-agent→serial；任务接受后禁降级重派。
 - Kiro:`执行Kiro补记` 方触发；三件套仅为非权威事后副本，不进入主循环事实链。
+- 审批:每任务先过 request-bound intake；新/改/Fix/歧义均 Pending 停机，批准须绑定旧草稿。
 - 核心落点:`SKILL.md` 负责最短路径；`references/` 承载冷路径；`scripts/requirements_gate.py`、
   `scripts/requirements_store.py`、`scripts/preflight.py`、`scripts/archive.py` 为确定性工具。
 
@@ -55,6 +60,8 @@
 graph TD
   Skill["SKILL.md"] --> Governance["references/*"]
   Skill --> Gate["requirements_gate.py"]
+  Skill --> Intake["requirements_intake.py"]
+  Intake --> Gate
   Skill --> ReqStore["requirements_store.py"]
   Skill --> Context["context_compiler.py / iteration_gate.py"]
   Context --> Dispatch["agent_dispatch.py"]
@@ -83,6 +90,7 @@ graph TD
 | REQ-008 | implemented | Pending 拆分、state_snapshot.py、notebook_gate.py、热/冷协议与 49 项全量测试 |
 | REQ-009 | implemented v1.3 | 模型路由、能力 revision、Ridge→tmux→native→serial 降级与防重复重派 |
 | REQ-010 | implemented v1.1 | 项目惯例优先、受管三件套与可选 `spec.json` |
+| REQ-011 | implemented v1.0 | request-bound intake、Pending 停机、批准链与任务入口闸 |
 
 ## Known failed approaches
 

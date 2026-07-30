@@ -23,6 +23,44 @@ description: >
 8. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
 9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
 10. `.kiro/specs/` 仅作事后对齐记录，不作需求、设计、规划或实现权威。
+11. 每项用户任务须先绑定请求 intake；空 Pending 文件不再足以证明任务已获批准。
+
+## 请求入口闸
+
+此闸先于 Git 开工闸、CodeGraph 探索、上下文编译、派发及代码修改。
+
+1. 把当前用户请求原文存入本地 `.iteration/request.txt`（不提交、不上传），复制
+   `templates/REQUIREMENTS-INTAKE.json` 为 `.iteration/intake-decision.json`。
+2. 仅可分类：
+   - `active`：任务完全落在现有 Active `REQ-*`；列出全部 ID。
+   - `pending`：新增/修订/删除/Fix 需求，或目标、范围、非目标、验收、假设任一未定。
+   - `approved`：当前消息明确批准此前展示的具体 Pending；须绑定此前 intake。
+3. `pending` 时，先以 `requirements_store.py write` 写完整 Pending，再生成 intake：
+
+```text
+python <skill>/scripts/requirements_intake.py build \
+  --request-file .iteration/request.txt \
+  --decision .iteration/intake-decision.json \
+  --intake-file .iteration/intakes/INTAKE-ID.json
+```
+
+向用户原样展示 Pending ID、规范稿与 `draft_sha256`，随即结束本轮；仅可请其批准、修改或拒绝。
+禁止开工、制合同、派 Agent、调 NotebookLM、写 Kiro 记录或改业务代码。
+`pending` build 以退出码 `3` 表示“已记录但未批准”，属预期停机，不得重试绕过。
+
+4. 用户批准时，以 `requirements_store.py write --evidence "<批准原话>"` 原子提升并移除 Pending；
+   `approved` intake 以 `--previous-intake <此前 intake>` 绑定已展示草稿。模糊肯定、未展示草稿、
+   缺旧 intake 或无批准原话均不得提升。
+5. `active` 或 `approved` 生成 intake 后，必须运行：
+
+```text
+python <skill>/scripts/requirements_gate.py assert-task-executable \
+  --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md \
+  --request-file .iteration/request.txt --intake-file .iteration/intakes/INTAKE-ID.json
+```
+
+缺 intake、请求/hash 失配、文档变化、Pending 未清或批准链不完整皆停止。脚本不能读取宿主聊天；
+故主 Agent 不执行此入口闸即属流程失败，不得用旧 intake 或空 Pending 代替。
 
 ## 开工闸
 
@@ -30,8 +68,6 @@ description: >
 先取得继续当前基线的裁定；禁擅自 pull/merge/rebase/reset/checkout/stash。
 
 ```text
-python <skill>/scripts/requirements_gate.py assert-executable \
-  --file docs/REQUIREMENTS-SPEC.md --pending-file docs/PENDING-REQUIREMENTS.md
 python <skill>/scripts/preflight.py --project-root <repo> --strict
 ```
 
@@ -39,8 +75,9 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 
 ## 默认热循环
 
-1. 首轮运行 `iteration_budget.py init` 与 `iteration_budget.py init-usage` 建立 `.iteration/budget.json`
-   和 `.iteration/usage.json`；每轮按实际工具调用更新 usage。
+1. 入口 intake 已通过 `assert-task-executable`；首轮运行 `iteration_budget.py init` 与
+   `iteration_budget.py init-usage` 建立 `.iteration/budget.json` 和 `.iteration/usage.json`；
+   每轮按实际工具调用更新 usage。
 2. 以 `requirements_store.py read --id REQ-*` 取当前合同引用条目；勿整读需求或历史。
 3. 生成 `.iteration/context.json`，显式列 requirement/symbol/file/test/modify/constraint；随即过
    `iteration_gate.py`。上下文细则见 [`references/CONTEXT-CONTROL.md`](./references/CONTEXT-CONTROL.md)。

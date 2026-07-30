@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "intake_id": "INTAKE-YYYYMMDD-NN",
+  "classification": "active | pending | approved",
+  "summary": "当前用户请求的规范化摘要",
+  "requirement_ids": [],
+  "pending_ids": [],
+  "approval_reasons": [],
+  "open_questions": [],
+  "approval_evidence": ""
+}
