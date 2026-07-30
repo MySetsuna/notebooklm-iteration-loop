@@ -59,13 +59,21 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 
 ```text
 python <skill>/scripts/agent_dispatch.py build --root <repo> \
-  --manifest .iteration/dispatch.json --output-dir .iteration/agents
+  --manifest .iteration/dispatch.json \
+  --capabilities .iteration/ridge-launch-profiles.json \
+  --output-dir .iteration/agents
 ```
 
-默认 `enabled:true`、后端 `auto`；顺序 Ridge Agent's Commune → 宿主 native → tmux → serial。
+默认 `enabled:true`、后端 `auto`；顺序 Ridge Agent's Commune → tmux → 宿主 native sub-agent → serial。
+仅能力缺失、明确 unsupported、或任务接受前 spawn 失败方降级；一经接受不得重派，防重复执行。
+主 Agent 为每包标 `light|medium|complex`；脚本映射 `secondary+low|intermediate+medium|frontier+high`。
+需更深推理时显式覆写 effort；不得由 Worker 自提级。Ridge 先调 `ridge_list_launch_profiles`，
+把原样能力快照交 `--capabilities`；脚本选择 profile，spawn 前复核 revision。
 写 Worker 仅在独立 worktree 且写集/独占资源无冲突时并行；共享工作区自动串行。
 大包传文件路径或 Ridge stash URI，消息勿复制全文。投递、终端接受、Agent ACK、执行结果、主 Agent 验证
 五层分列；只有匹配 baseline/packet/result hash 且验证证据齐全的 result 可进入主 Agent 联合验证。
+Ridge 连接、模型与启动参数须从当前宿主 MCP schema、能力清单及 launcher help 动态发现；禁记录或猜测
+本机端口、Token、路径、pane ID、模型名、命令。若无 Ridge 工具，报告缺失；不得以 Mycelium 代投。
 
 ## NotebookLM 冷闸
 

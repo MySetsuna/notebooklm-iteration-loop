@@ -28,6 +28,12 @@
     "output": 0,
     "total": 0
   },
+  "model_execution": {
+    "profile_id": "<effective profile from spawn response>",
+    "model": "<effective model from spawn response>",
+    "reasoning_effort": "<effective reasoning effort>",
+    "capability_revision": "<from worker packet>"
+  },
   "transport_receipt": {
     "backend": "ridge",
     "receipt_id": "",

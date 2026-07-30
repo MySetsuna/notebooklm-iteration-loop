@@ -5,13 +5,15 @@
 
 ## 当前迭代目标
 
-- 实施 `REQ-009`：默认有界主控—Worker 编排；Ridge/native/tmux/serial 后端可替换。
+- 实施 `REQ-009 v1.3`：按难度路由模型，并固定 Ridge→tmux→native sub-agent→serial 降级序。
 
 ## 已验证代码事实
 
 - Context Compiler、Iteration Budget、Iteration Gate、JSONL archive 均有 unittest。
 - Active/Pending 已拆为两文件；需求脚本按显式 ID 有界读写。
 - `agent_dispatch.py` 已实现 baseline/packet/result hash、DAG 波次、写集/资源/隔离闸与回收计量。
+- 难度确定性映射 tier/effort；Ridge profile 仅从带 revision 的宿主能力快照解析。
+- 自动后端仅在任务接受前失败方降级；一经接受不得跨后端重派同 packet。
 
 ## 相关模块与 symbol
 
@@ -23,11 +25,11 @@
 ## 最近完成与当前 diff
 
 - 最近完成:`REQ-008` 确定性热/冷循环。
-- 当前完成:`REQ-009` 多 Agent 制包、后端协议、并行安全与结果回收。
+- 当前完成:`REQ-009 v1.3` 难度路由、typed profile、后端降级序与防重复重派。
 
 ## 验证状态
 
-- 当前阶段:实现完成；67 项全量测试、其中 `agent_dispatch` 18 项定向测试，以及两路真实有界 Worker 前向验证均通过。
+- 当前阶段:实现完成；71 项全量测试、其中 `agent_dispatch` 22 项，以及复杂+xhigh profile 前向制包均通过。
 
 ## 当前失败信号与风险
 
@@ -40,6 +42,8 @@
 - 两源:获批 `REQUIREMENTS-SPEC` + 本文；历史不上传。
 - 决策:无有效 `.codegraph` 索引时不自动初始化；质量原始日志不进入状态源；历史改为有界 JSONL。
 - 编排:默认过调度闸；主 Agent 保留审批/联合验证/提交权；Worker 不调 NLM；共享工作区写任务串行。
+- 模型:主 Agent 标难度；profile/effort 由宿主能力快照解析并绑定 revision；Worker 不自提级。
+- 后端:auto 严格 Ridge→tmux→native sub-agent→serial；任务接受后禁降级重派。
 - 核心落点:`SKILL.md` 负责最短路径；`references/` 承载冷路径；`scripts/requirements_gate.py`、
   `scripts/requirements_store.py`、`scripts/preflight.py`、`scripts/archive.py` 为确定性工具。
 
@@ -73,7 +77,7 @@ graph TD
 | REQ-006 | implemented | context_compiler.py、iteration_budget.py、iteration_gate.py、失败知识/Reviewer 模板与测试 |
 | REQ-007 | implemented | requirements_store.py、显式 requirement context、审批证据与原子写入测试 |
 | REQ-008 | implemented | Pending 拆分、state_snapshot.py、notebook_gate.py、热/冷协议与 49 项全量测试 |
-| REQ-009 | implemented | agent_dispatch.py、MULTI-AGENT-PROTOCOL.md、dispatch/result 模板、18 项定向测试与两路前向验证 |
+| REQ-009 | implemented v1.3 | 模型路由、能力 revision、Ridge→tmux→native→serial 降级与防重复重派 |
 
 ## Known failed approaches
 

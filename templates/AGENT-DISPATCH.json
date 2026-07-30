@@ -7,11 +7,37 @@
     "max_packet_bytes": 16384,
     "max_total_packet_bytes": 49152
   },
+  "ridge_capabilities": {
+    "schema_version": 1,
+    "capability_revision": "<from ridge_list_launch_profiles>",
+    "profiles": [
+      {
+        "id": "<host profile id>",
+        "tier": "secondary",
+        "reasoning_efforts": ["low"],
+        "available": true
+      },
+      {
+        "id": "<host profile id>",
+        "tier": "intermediate",
+        "reasoning_efforts": ["medium"],
+        "available": true
+      },
+      {
+        "id": "<host profile id>",
+        "tier": "frontier",
+        "reasoning_efforts": ["high", "xhigh"],
+        "available": true
+      }
+    ]
+  },
   "tasks": [
     {
       "id": "worker-1",
       "result_path": ".iteration/agents/result-worker-1.json",
       "objective": "实现一个明确且可独立验证的获批目标",
+      "difficulty": "medium",
+      "reasoning_effort": "medium",
       "execution_kind": "write",
       "isolation": "worktree",
       "requirements": ["REQ-001"],

@@ -58,6 +58,7 @@
 - 验证:`<命令 + exit + evidence>`
 - 质量:`<计数/相对基线/待处理 ID>`
 - Agent 编排:`<enabled/backend/execution_mode/waves/dispatch_id>`
+- 模型路由:`<difficulty/tier/effort/profile/capability revision>`
 - Worker 回收:`<packet/result hash、状态、越界数、主 Agent 联合验证>`
 - Token:`<主从 input/cache_read/cache_write/output/total；无 A/B 则不宣称收益>`
 

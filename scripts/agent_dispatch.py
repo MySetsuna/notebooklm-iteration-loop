@@ -20,6 +20,12 @@ SCHEMA_VERSION = 1
 BACKENDS = {"auto", "ridge", "native", "tmux", "serial"}
 RESULT_STATUSES = {"completed", "blocked", "failed"}
 TOKEN_FIELDS = ("input", "cache_read", "cache_write", "output", "total")
+DIFFICULTY_ROUTES = {
+    "light": {"tier": "secondary", "reasoning_effort": "low"},
+    "medium": {"tier": "intermediate", "reasoning_effort": "medium"},
+    "complex": {"tier": "frontier", "reasoning_effort": "high"},
+}
+REASONING_EFFORTS = {"low", "medium", "high", "xhigh"}
 DEFAULTS = {
     "enabled": True,
     "backend": "auto",
@@ -259,17 +265,121 @@ def _config(manifest: dict[str, Any], mode: str | None, backend: str | None) -> 
     return value
 
 
-def _transport(backend: str) -> dict[str, Any]:
+def _model_capabilities(value: Any, *, required: bool) -> dict[str, Any] | None:
+    if value is None and not required:
+        return None
+    if not isinstance(value, dict) or value.get("schema_version") != SCHEMA_VERSION:
+        raise ValueError("ridge capabilities snapshot is missing or invalid")
+    revision = value.get("capability_revision")
+    profiles = value.get("profiles")
+    if not isinstance(revision, str) or not revision.strip():
+        raise ValueError("ridge capabilities need capability_revision")
+    if not isinstance(profiles, list) or not profiles:
+        raise ValueError("ridge capabilities need profiles")
+    normalized = []
+    ids = set()
+    for profile in profiles:
+        if not isinstance(profile, dict):
+            raise ValueError("ridge capability profile is invalid")
+        profile_id = profile.get("id")
+        tier = profile.get("tier")
+        if (
+            not isinstance(profile_id, str)
+            or not profile_id.strip()
+            or profile_id in ids
+            or tier not in {"secondary", "intermediate", "frontier"}
+            or not isinstance(profile.get("available"), bool)
+        ):
+            raise ValueError("ridge capability profile is invalid")
+        efforts = _strings(
+            profile.get("reasoning_efforts", []),
+            f"ridge profile {profile_id}.reasoning_efforts",
+            allow_empty=False,
+        )
+        if not set(efforts) <= REASONING_EFFORTS:
+            raise ValueError("ridge capability reasoning effort is invalid")
+        model = profile.get("model")
+        if model is not None and (not isinstance(model, str) or not model.strip()):
+            raise ValueError("ridge capability model is invalid")
+        ids.add(profile_id)
+        normalized.append(
+            {
+                "id": profile_id.strip(),
+                "tier": tier,
+                "reasoning_efforts": efforts,
+                "available": profile["available"],
+                **({"model": model.strip()} if isinstance(model, str) else {}),
+            }
+        )
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "capability_revision": revision.strip(),
+        "profiles": sorted(normalized, key=lambda item: item["id"]),
+    }
+
+
+def _model_route(
+    task: dict[str, Any],
+    capabilities: dict[str, Any] | None,
+    backend: str,
+) -> dict[str, Any]:
+    difficulty = task.get("difficulty", "medium")
+    if difficulty not in DIFFICULTY_ROUTES:
+        raise ValueError(f"{task['id']}.difficulty is invalid")
+    desired = DIFFICULTY_ROUTES[difficulty]
+    effort = task.get("reasoning_effort", desired["reasoning_effort"])
+    if effort not in REASONING_EFFORTS:
+        raise ValueError(f"{task['id']}.reasoning_effort is invalid")
+    route = {
+        "difficulty": difficulty,
+        "tier": desired["tier"],
+        "reasoning_effort": effort,
+        "resolution": "backend_adapter",
+    }
+    if backend not in {"auto", "ridge"}:
+        return route
+    if capabilities is None:
+        raise ValueError("ridge capabilities snapshot is required")
+    matches = [
+        profile
+        for profile in capabilities["profiles"]
+        if profile["available"]
+        and profile["tier"] == desired["tier"]
+        and effort in profile["reasoning_efforts"]
+    ]
+    if not matches:
+        raise ValueError(
+            f"{task['id']} has no Ridge profile for {desired['tier']}+{effort}"
+        )
+    profile = matches[0]
+    return {
+        **route,
+        "resolution": "ridge_profile",
+        "profile_id": profile["id"],
+        "capability_revision": capabilities["capability_revision"],
+        **({"advertised_model": profile["model"]} if "model" in profile else {}),
+    }
+
+
+def _transport(backend: str, capability_revision: str | None) -> dict[str, Any]:
     return {
         "requested_backend": backend,
-        "auto_order": ["ridge", "native", "tmux", "serial"],
+        "auto_order": ["ridge", "tmux", "native", "serial"],
+        "fallback_rule": (
+            "advance only when backend is unavailable, unsupported, or spawn fails "
+            "before task acceptance; never duplicate an accepted task"
+        ),
         "payload": "shared packet file; Ridge may use ridge_stash_data and send only ridge://cache URI",
         "ridge": {
             "discover": "ridge_get_team_profile",
-            "spawn_if_configured": "ridge_split_pane",
+            "list_launch_profiles": "ridge_list_launch_profiles",
+            "spawn": "ridge_split_pane",
+            "typed_spawn_fields": ["launch_profile", "reasoning_effort"],
+            "required_capability_revision": capability_revision,
             "delegate": "ridge_delegate_task",
             "observe": ["ridge_delivery_status", "ridge_capture_pane", "ridge_inbox_read"],
             "acknowledge": "ridge_acknowledge_receipt",
+            "pre_spawn_rule": "re-read capabilities; revision must match packet",
             "completion_rule": "receipt is transport evidence only; validated result file proves completion",
         },
         "native": {"actions": ["spawn_agent", "send_message", "wait_agent"]},
@@ -287,6 +397,7 @@ def build_plan(
     backend: str | None = None,
     current_head: str | None = None,
     worktree_digest: str | None = None,
+    capabilities: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if manifest.get("schema_version") != SCHEMA_VERSION:
         raise ValueError(f"schema_version must be {SCHEMA_VERSION}")
@@ -310,6 +421,10 @@ def build_plan(
         raise ValueError("every task needs a non-empty id")
     if len(set(ids)) != len(ids):
         raise ValueError("task ids must be unique")
+    capabilities = _model_capabilities(
+        capabilities if capabilities is not None else manifest.get("ridge_capabilities"),
+        required=config["enabled"] and config["backend"] in {"auto", "ridge"},
+    )
     dispatch_id = stable_hash(
         {"head": head, "worktree_digest": baseline_digest, "tasks": sorted(ids)}
     )[:24]
@@ -364,6 +479,11 @@ def build_plan(
             },
             "constraints": constraints,
             "verification": _verification(task),
+            "model_route": _model_route(
+                task,
+                capabilities,
+                config["backend"] if config["enabled"] else "serial",
+            ),
             "depends_on": _strings(task.get("depends_on", []), f"{task_id}.depends_on"),
             "execution_kind": execution_kind,
             "isolation": isolation,
@@ -417,7 +537,11 @@ def build_plan(
         "waves": execution_waves if config["enabled"] else [],
         "parallel_rejections": parallel_rejections,
         "config": config,
-        "transport": _transport(config["backend"]),
+        "model_capabilities": capabilities,
+        "transport": _transport(
+            config["backend"],
+            capabilities["capability_revision"] if capabilities else None,
+        ),
         "packets": packets if config["enabled"] else [],
         "total_packet_bytes": total_bytes if config["enabled"] else 0,
     }
@@ -464,6 +588,16 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
     if plan.get("plan_hash") != expected_plan_hash:
         reasons.append("plan_hash_mismatch")
     max_packet_bytes = plan.get("config", {}).get("max_packet_bytes")
+    backend = plan.get("config", {}).get("backend")
+    try:
+        capabilities = _model_capabilities(
+            plan.get("model_capabilities"),
+            required=plan.get("orchestration_enabled") is True
+            and backend in {"auto", "ridge"},
+        )
+    except ValueError:
+        capabilities = None
+        reasons.append("plan_model_capabilities_invalid")
     packets = plan.get("packets")
     if not isinstance(packets, list):
         return sorted(set([*reasons, "plan_packets_invalid"]))
@@ -483,6 +617,33 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
             reasons.append("plan_packet_size_mismatch")
         if isinstance(max_packet_bytes, int) and size > max_packet_bytes:
             reasons.append("plan_packet_too_large")
+        route = packet.get("model_route")
+        if not isinstance(route, dict):
+            reasons.append("plan_model_route_invalid")
+        else:
+            difficulty = route.get("difficulty")
+            desired = DIFFICULTY_ROUTES.get(difficulty)
+            effort = route.get("reasoning_effort")
+            if (
+                desired is None
+                or route.get("tier") != desired["tier"]
+                or effort not in REASONING_EFFORTS
+            ):
+                reasons.append("plan_model_route_invalid")
+            if backend in {"auto", "ridge"}:
+                profiles = capabilities["profiles"] if capabilities else []
+                matching = [
+                    profile
+                    for profile in profiles
+                    if profile["id"] == route.get("profile_id")
+                    and profile["available"]
+                    and profile["tier"] == route.get("tier")
+                    and effort in profile["reasoning_efforts"]
+                    and route.get("capability_revision")
+                    == capabilities["capability_revision"]
+                ]
+                if route.get("resolution") != "ridge_profile" or len(matching) != 1:
+                    reasons.append("plan_model_route_invalid")
     total = sum(
         packet.get("packet_bytes", 0)
         for packet in packets
@@ -600,6 +761,28 @@ def validate_result(
     receipt = result.get("transport_receipt")
     if receipt is not None and not isinstance(receipt, dict):
         reasons.append("result_transport_receipt_invalid")
+    route = packet.get("model_route", {})
+    execution = result.get("model_execution")
+    if not isinstance(execution, dict):
+        reasons.append("result_model_execution_invalid")
+    elif (
+        execution.get("reasoning_effort") != route.get("reasoning_effort")
+        or not isinstance(execution.get("model"), str)
+        or not execution["model"].strip()
+        or (
+            route.get("resolution") == "ridge_profile"
+            and (
+                execution.get("profile_id") != route.get("profile_id")
+                or execution.get("capability_revision")
+                != route.get("capability_revision")
+            )
+        )
+        or (
+            route.get("advertised_model") is not None
+            and execution.get("model") != route.get("advertised_model")
+        )
+    ):
+        reasons.append("result_model_execution_invalid")
     result_hash = result.get("result_hash")
     hash_input = {key: value for key, value in result.items() if key != "result_hash"}
     if not isinstance(result_hash, str) or result_hash != stable_hash(hash_input):
@@ -689,6 +872,7 @@ def main() -> None:
     build.add_argument("--output-dir", type=Path, default=Path(".iteration/agents"))
     build.add_argument("--mode", choices=("on", "off"))
     build.add_argument("--backend", choices=sorted(BACKENDS))
+    build.add_argument("--capabilities", type=Path)
     result = subparsers.add_parser("validate-result")
     result.add_argument("--root", type=Path, required=True)
     result.add_argument("--plan", type=Path, required=True)
@@ -709,6 +893,7 @@ def main() -> None:
                 args.pending,
                 args.mode,
                 args.backend,
+                capabilities=_read(args.capabilities) if args.capabilities else None,
             )
             path = write_plan(args.output_dir, plan)
             output = {

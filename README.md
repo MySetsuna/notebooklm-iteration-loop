@@ -45,7 +45,8 @@ the Google sign-in is complete. `link-to-doc-library` is optional human-only vau
 5. Run `iteration_gate.py`; it rejects full scans, missing entries, unlisted reads, unlisted writes, background recaps,
    and budget overruns. Gate failure stops the iteration.
 6. Use only explicit CodeGraph symbol/queries; files and tests do not silently become graph queries.
-7. Build `agent_dispatch.py` packets. Use Ridge Agent's Commune, host-native agents, tmux, or serial;
+7. Build `agent_dispatch.py` packets. Try Ridge Agent's Commune, tmux, host-native sub-agents, then serial;
+   classify tasks as light/medium/complex and resolve launch profiles from live host capabilities;
    transport receipts never count as completion.
 8. Workers implement only within packet scope; the lead validates result hashes and reruns applicable checks.
 9. Reviewer checks contract, context, diff, failed knowledge, and evidence; Reviewer does not edit code.

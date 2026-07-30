@@ -37,6 +37,7 @@ Reviewer 默认只读；可与实现 Worker 并行，但不改代码。
 - symbol、CodeGraph 查询与有界事实/调用链证据；
 - allowed files/write paths、约束、依赖；
 - verification 命令与预期退出码；
+- difficulty、目标 tier/effort、resolved profile 与 capability revision；
 - Worker 禁止事项。
 
 默认每包 `16384` bytes，总包 `49152` bytes，最多三个 Worker。大背景、原始日志、全 Git 历史、
@@ -61,29 +62,51 @@ Reviewer 默认只读；可与实现 Worker 并行，但不改代码。
 `--backend auto|ridge|native|tmux|serial` 可覆盖模板。`auto` 顺序：
 
 1. Ridge Agent's Commune；
-2. 宿主原生 Agent API；
-3. tmux；
+2. tmux；
+3. 宿主原生 sub-agent API；
 4. serial。
 
 后端只负责发现、spawn、投递、观察和回话；packet/result 语义不随之后端变化。
+仅后端不可用、返回结构化 unsupported、或任务接受前 spawn 失败方进下一档。一旦终端/Agent 已接受，
+不得向后备后端重派同 packet；任务执行失败亦不得当成后端不可用，须回主 Agent 裁决。
 
 ### Ridge
 
-1. `ridge_get_team_profile` 找空闲 pane；
-2. 无合适 pane 且已有用户配置的 agent 启动命令时，才用 `ridge_split_pane`；
-3. 共用文件系统时只传 packet 路径；跨边界或包较大时用 `ridge_stash_data`，消息仅传
+1. 从当前宿主 MCP 工具注册表发现 `ridge_*` 能力；不得按本机配置猜 server 名、端口、Token、路径或 pane；
+2. 调 `ridge_list_launch_profiles`，原样保存有 revision 的能力快照；再以 `ridge_get_team_profile` 找目标 pane；
+3. 主 Agent 标难度：`light→secondary+low`、`medium→intermediate+medium`、
+   `complex→frontier+high`；必要时显式覆写 effort；
+4. `agent_dispatch.py` 仅从能力快照解析 profile；无匹配即停，不猜模型名。spawn 前重查 revision，
+   再以 `ridge_split_pane` 的 typed `launch_profile/reasoning_effort` 拉起；
+5. 共用文件系统时只传 packet 路径；跨边界或包较大时用 `ridge_stash_data`，消息仅传
    `ridge://cache/<id>`；
-4. `ridge_delegate_task` 派发，保存 `receiptId`；
-5. `ridge_delivery_status`、`ridge_capture_pane`、`ridge_inbox_read` 观察；
-6. Worker `ridge_acknowledge_receipt` 仅表示接受/拒绝任务；
-7. 完成仍以 result 文件经 `validate-result` 为准。
+6. `ridge_delegate_task` 派发，保存 `receiptId`；
+7. `ridge_delivery_status`、`ridge_capture_pane`、`ridge_inbox_read` 观察；
+8. Worker `ridge_acknowledge_receipt` 仅表示接受/拒绝任务；
+9. 完成仍以含实际 profile/model/effort 的 result 经 `validate-result` 为准。
 
 `submit_dispatched`、`terminalAccepted`、`agentAcknowledged` 均非完成证明。Ridge Inbox/Stash 为
 内存态；`dispatch-plan.json` 与 result 文件才是本轮持久 SSOT。ACK 超时先查 receipt，勿盲重派。
+若宿主未暴露 Ridge Commune 工具，须报告能力缺失并按后端顺序降级；Mycelium 属项目索引/记忆，
+不得代替 Agent 会话投递。
 
-### native / tmux
+### 难度与提级
 
-native 映射为宿主 `spawn/send/wait`；tmux 映射为开 pane/session、发送 packet 路径、回收 result。
+难度由主 Agent 据已批准范围裁定；用户可覆盖。默认：
+
+| 难度 | tier | effort | 适用 |
+| --- | --- | --- | --- |
+| light | secondary | low | 局部文档、独立小测、机械变换 |
+| medium | intermediate | medium | 单模块功能、证据明确的修复 |
+| complex | frontier | high | 跨边界、多假设冲突、高风险修改 |
+
+两轮局部失败、跨架构边界、证据冲突、高风险或用户指定方可提级。提级须新开 Worker，并携原 packet、
+checkpoint 与失败证据；旧 Worker 停写。禁静默原地切模。`xhigh` 仅显式请求且能力快照支持时可用。
+
+### tmux / native
+
+tmux 映射为开 pane/session、发送 packet 路径、回收 result；native 才映射宿主
+`spawn_agent/send_message/wait_agent` 等内部 sub-agent API。
 若后端无 ACK，须如实标记；不得伪造强回执。
 
 ## 状态机与回收
@@ -99,6 +122,7 @@ validated → dispatched → terminal_accepted → agent_accepted
 - changed paths；
 - 每条验证命令、实际退出码、本地证据文件路径与 sha256；
 - `input/cache_read/cache_write/output/total`；
+- spawn 回执中的实际 profile/model/effort 与 capability revision；
 - 可选 transport receipt；
 - `result_hash`。
 
@@ -112,7 +136,9 @@ Worker 将命令输出存本地证据文件并算 sha256；再写不含 `result_
 ```text
 python <skill>/scripts/agent_dispatch.py build --root <repo> \
   --manifest .iteration/dispatch.json --requirements docs/REQUIREMENTS-SPEC.md \
-  --pending docs/PENDING-REQUIREMENTS.md --output-dir .iteration/agents
+  --pending docs/PENDING-REQUIREMENTS.md \
+  --capabilities .iteration/ridge-launch-profiles.json \
+  --output-dir .iteration/agents
 
 python <skill>/scripts/agent_dispatch.py finalize-result \
   --result .iteration/agents/result-worker-1.json

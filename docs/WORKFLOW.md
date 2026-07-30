@@ -39,6 +39,10 @@
 - `scripts/iteration_gate.py` 硬控显式入口、允许写集、禁止全图/背景复述，并调用预算闸；失败即停。
 - `scripts/agent_dispatch.py` 默认制有界 Worker packet；本仓后端优先宿主 native，Ridge 可用
   Agent's Commune；写任务无独立 worktree 时串行。
+- Ridge 先取 launch profile 能力快照；任务难度映射 tier/effort，脚本解析实际 profile。
+  profile revision 或实际执行配置不符即拒绝；Skill 不固化模型名与宿主参数。
+- `auto` 降级序：Ridge → tmux → 宿主 native sub-agent → serial；仅接受前的能力/启动失败可降级，
+  已接受 packet 不得跨后端重派。
 - Worker result 须匹配 dispatch/packet/baseline/result hash，并带改动路径、验证退出码与
   `token-usage --all` 分项；主 Agent 仍跑联合回归。
 - `scripts/notebook_gate.py` 仅十类显式触发放行；`state_snapshot.py` 先校验 HEAD 与需求 version/hash。

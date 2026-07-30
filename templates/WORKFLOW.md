@@ -41,6 +41,10 @@ python <skill>/scripts/requirements_gate.py assert-executable \
   每轮按实际工具调用更新 usage，再以 `iteration_budget.py check` 检查上限；超限停机。
 - 默认 `agent_dispatch.enabled:true`；后端:`auto|ridge|native|tmux|serial`。主 Agent 从模板生成单 Worker
   packet；写任务仅独立 worktree 且写集/独占资源无冲突时并行。Worker 不审批、不扩范围、不调 NLM。
+- 主 Agent 标 `light|medium|complex`；Ridge 先取 profile 能力快照，脚本映射 tier/effort 并解析
+  typed launch profile。revision 或实际执行配置不符即拒绝；禁固化本机模型与启动参数。
+- `auto` 顺序:Ridge → tmux → 宿主 native sub-agent → serial；仅任务接受前失败可降级，
+  已接受 packet 不得跨后端重派。
 - Ridge 仅作传输：`submit_dispatched`、`terminalAccepted`、`agentAcknowledged` 均非完成；完成须结构化
   result 过 `agent_dispatch.py validate-result`，再由主 Agent 联合验证。
 - 跨模块/高风险任务使用 `agent/<task>` 分支；Reviewer 只审合同、diff、失败知识与验证，不改代码；人工提升回主线。

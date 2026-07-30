@@ -38,6 +38,33 @@ PENDING = """# Pending
 
 _无_
 """
+CAPABILITIES = {
+    "schema_version": 1,
+    "capability_revision": "ridge-cap-1",
+    "profiles": [
+        {
+            "id": "profile-light",
+            "tier": "secondary",
+            "reasoning_efforts": ["low"],
+            "available": True,
+            "model": "model-light",
+        },
+        {
+            "id": "profile-medium",
+            "tier": "intermediate",
+            "reasoning_efforts": ["medium"],
+            "available": True,
+            "model": "model-medium",
+        },
+        {
+            "id": "profile-complex",
+            "tier": "frontier",
+            "reasoning_efforts": ["high", "xhigh"],
+            "available": True,
+            "model": "model-complex",
+        },
+    ],
+}
 
 
 def task(task_id: str, *, write: bool = False, path: str | None = None) -> dict:
@@ -46,6 +73,7 @@ def task(task_id: str, *, write: bool = False, path: str | None = None) -> dict:
         "id": task_id,
         "result_path": f".iteration/agents/result-{task_id}.json",
         "objective": f"complete {task_id}",
+        "difficulty": "medium",
         "execution_kind": "write" if write else "read",
         "isolation": "worktree" if write else "shared",
         "requirements": ["REQ-009"],
@@ -79,6 +107,7 @@ class AgentDispatchTests(unittest.TestCase):
             {
                 "schema_version": 1,
                 "dispatch": {"max_workers": 4, **dispatch},
+                "ridge_capabilities": CAPABILITIES,
                 "tasks": tasks,
             },
             requirements,
@@ -124,6 +153,12 @@ class AgentDispatchTests(unittest.TestCase):
                 "terminal_accepted": True,
                 "agent_acknowledged": True,
             },
+            "model_execution": {
+                "profile_id": packet["model_route"].get("profile_id"),
+                "model": packet["model_route"].get("advertised_model", "runtime-model"),
+                "reasoning_effort": packet["model_route"]["reasoning_effort"],
+                "capability_revision": packet["model_route"].get("capability_revision"),
+            },
         }
         value["result_hash"] = stable_hash(value)
         return value
@@ -138,6 +173,65 @@ class AgentDispatchTests(unittest.TestCase):
         self.assertEqual(first["plan_hash"], second["plan_hash"])
         self.assertEqual(first["waves"], [["a", "b"]])
         self.assertTrue(all(packet["packet_bytes"] <= 16384 for packet in first["packets"]))
+        self.assertEqual(
+            first["transport"]["auto_order"],
+            ["ridge", "tmux", "native", "serial"],
+        )
+        self.assertIn("never duplicate", first["transport"]["fallback_rule"])
+
+    def test_difficulty_routes_to_discovered_profiles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, requirements, pending = self._files(directory)
+            tasks = [task("light"), task("medium"), task("complex")]
+            for value, difficulty in zip(tasks, ("light", "medium", "complex")):
+                value["difficulty"] = difficulty
+            plan = self._plan(root, requirements, pending, tasks)
+        routes = {packet["task_id"]: packet["model_route"] for packet in plan["packets"]}
+        self.assertEqual(routes["light"]["profile_id"], "profile-light")
+        self.assertEqual(routes["medium"]["profile_id"], "profile-medium")
+        self.assertEqual(routes["complex"]["profile_id"], "profile-complex")
+        self.assertEqual(routes["complex"]["reasoning_effort"], "high")
+
+    def test_reasoning_override_uses_profile_capability(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, requirements, pending = self._files(directory)
+            value = task("complex")
+            value["difficulty"] = "complex"
+            value["reasoning_effort"] = "xhigh"
+            plan = self._plan(root, requirements, pending, [value])
+        self.assertEqual(plan["packets"][0]["model_route"]["reasoning_effort"], "xhigh")
+
+    def test_rejects_invalid_difficulty_missing_or_unmatched_capability(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, requirements, pending = self._files(directory)
+            invalid = task("a")
+            invalid["difficulty"] = "impossible"
+            with self.assertRaisesRegex(ValueError, "difficulty"):
+                self._plan(root, requirements, pending, [invalid])
+            with self.assertRaisesRegex(ValueError, "capabilities snapshot"):
+                build_plan(
+                    root,
+                    {"schema_version": 1, "tasks": [task("a")]},
+                    requirements,
+                    pending,
+                    current_head="abc123",
+                    worktree_digest="dirty-hash",
+                )
+            unmatched = json.loads(json.dumps(CAPABILITIES))
+            unmatched["profiles"][1]["available"] = False
+            with self.assertRaisesRegex(ValueError, "no Ridge profile"):
+                build_plan(
+                    root,
+                    {
+                        "schema_version": 1,
+                        "ridge_capabilities": unmatched,
+                        "tasks": [task("a")],
+                    },
+                    requirements,
+                    pending,
+                    current_head="abc123",
+                    worktree_digest="dirty-hash",
+                )
 
     def test_shared_write_tasks_degrade_to_serial(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -274,6 +368,24 @@ class AgentDispatchTests(unittest.TestCase):
                 current_worktree_digest="dirty-hash",
             )
         self.assertIn("result_completion_unverified", validation["reasons"])
+
+    def test_result_rejects_different_effective_model_route(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, requirements, pending = self._files(directory)
+            plan = self._plan(root, requirements, pending, [task("a")])
+            result = self._result(root, plan["packets"][0])
+            result["model_execution"]["reasoning_effort"] = "high"
+            result["result_hash"] = stable_hash(
+                {key: value for key, value in result.items() if key != "result_hash"}
+            )
+            validation = validate_result(
+                root,
+                plan,
+                result,
+                current_head="abc123",
+                current_worktree_digest="dirty-hash",
+            )
+        self.assertIn("result_model_execution_invalid", validation["reasons"])
 
     def test_fabricated_verification_evidence_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

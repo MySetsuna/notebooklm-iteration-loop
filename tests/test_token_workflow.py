@@ -25,6 +25,10 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertNotIn("codegraph_trace", skill)
         self.assertNotIn("planning_delta", skill)
         self.assertNotIn("docs/LOG.md", skill)
+        self.assertIn("不得以 Mycelium 代投", skill)
+        self.assertIn("ridge_list_launch_profiles", skill)
+        self.assertNotIn("127.0.0.1", skill)
+        self.assertNotIn("paneId\":\"", skill)
 
     def test_templates_keep_current_truth_and_drop_markdown_history(self):
         state = (ROOT / "templates" / "PROJECT-STATE.md").read_text(encoding="utf-8")
@@ -37,6 +41,15 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertTrue((ROOT / "templates" / "ITERATION-BUDGET.json").exists())
         self.assertTrue((ROOT / "templates" / "AGENT-DISPATCH.json").exists())
         self.assertTrue((ROOT / "templates" / "AGENT-RESULT.json").exists())
+        dispatch = json.loads(
+            (ROOT / "templates" / "AGENT-DISPATCH.json").read_text(encoding="utf-8")
+        )
+        result = json.loads(
+            (ROOT / "templates" / "AGENT-RESULT.json").read_text(encoding="utf-8")
+        )
+        self.assertIn("ridge_capabilities", dispatch)
+        self.assertIn("difficulty", dispatch["tasks"][0])
+        self.assertIn("model_execution", result)
 
     def test_committed_archive_records_match_schema(self):
         path = ROOT / "docs" / "archive" / "events-2026-07.jsonl"

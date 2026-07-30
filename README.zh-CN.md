@@ -42,8 +42,8 @@ cp -r notebooklm-iteration-loop/skills/link-to-doc-library ~/.claude/skills/
 4. 用显式 `--symbol`、`--file`、`--test`、`--modify` 编译 `.iteration/context.json`。
 5. 运行 `iteration_gate.py`；其拒绝全图、无入口、越界读、越界写、背景复述与预算超限；失败即停。
 6. CodeGraph 只执行显式 symbol/query；文件与测试不自动变图查询。
-7. 用 `agent_dispatch.py` 制包；后端可取 Ridge Agent's Commune、宿主 native、tmux 或 serial，
-   传输回执不得算完成。
+7. 用 `agent_dispatch.py` 制包；默认依次取 Ridge Agent's Commune、tmux、宿主 native sub-agent、serial，
+   任务先标轻/中/复杂，再从宿主实时能力解析启动 profile；传输回执不得算完成。
 8. Worker 仅在 packet 写集内改；主 Agent 验 result hash 后重跑适用质量闸。
 9. Reviewer 只审合同、context、diff、失败知识与证据，不改代码。
 10. 默认留热循环；命中冷闸才生成状态快照、调用 NotebookLM、验输出，再回代码与测试；历史 append JSONL。
