@@ -120,6 +120,22 @@ Ridge 连接、模型与启动参数须从当前宿主 MCP schema、能力清单
 ## NotebookLM 冷闸
 
 仅 [`references/HOT-COLD-PROTOCOL.md`](./references/HOT-COLD-PROTOCOL.md) 所列十类触发可进入冷循环。
+需要登录、刷新凭据或执行 NotebookLM CLI 前，先使用
+[`skills/refresh-notebooklm-auth/SKILL.md`](./skills/refresh-notebooklm-auth/SKILL.md)。
+本机固定可通代理为 `http://127.0.0.1:51081`：CLI 环境变量与 Chrome
+`--proxy-server` 必须同时传入；不得只给其中一端，也不得改系统代理。
+
+```text
+python <skill>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py launch \
+  --proxy http://127.0.0.1:51081 --cdp-port 19222
+python <skill>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py status \
+  --cdp-url http://127.0.0.1:19222
+```
+
+NotebookLM 当前有效站点可能为 `https://notebook.google.com/`；不得因域名与
+`notebooklm.google.com` 不同而判定未登录。认证提取只输出成功/失败及非敏感元数据，
+不得读取、打印、提交 Cookie、Token 或本地凭据。
+
 调用前生成决策 JSON 与状态快照：
 
 ```text
