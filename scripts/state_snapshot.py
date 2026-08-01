@@ -67,10 +67,11 @@ def repository_head(root: Path) -> str:
     return _git(root, "rev-parse", "HEAD")
 
 
-def changed_paths(root: Path) -> list[str]:
+def changed_paths(root: Path, ignored_paths: set[str] | None = None) -> list[str]:
     tracked = _git(root, "diff", "HEAD", "--name-only", "--diff-filter=ACMRD").splitlines()
     untracked = _git(root, "ls-files", "--others", "--exclude-standard").splitlines()
-    return sorted({path.replace("\\", "/") for path in [*tracked, *untracked] if path})
+    ignored = {path.replace("\\", "/") for path in (ignored_paths or set())}
+    return sorted({path.replace("\\", "/") for path in [*tracked, *untracked] if path and path.replace("\\", "/") not in ignored})
 
 
 def _load_decision(path: Path | None) -> dict[str, Any] | None:
@@ -89,6 +90,7 @@ def build_snapshot(
     pending_path: Path,
     generated_at: str | None = None,
     decision: dict[str, Any] | None = None,
+    output_path: Path | None = None,
 ) -> str:
     base = state_path.read_text(encoding="utf-8").split(RUNTIME_MARKER, 1)[0].rstrip()
     missing = [heading for heading in REQUIRED_HEADINGS if heading not in base]
@@ -99,7 +101,8 @@ def build_snapshot(
     digest = requirements_hash(requirements_path)
     pending_digest = requirements_hash(pending_path)
     timestamp = generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    paths = changed_paths(root)
+    ignored = {output_path.resolve().relative_to(root.resolve()).as_posix()} if output_path else set()
+    paths = changed_paths(root, ignored)
     pending = pending_index(pending_path)
     pending_lines = (
         [
@@ -149,6 +152,7 @@ def validate_snapshot(
     snapshot_path: Path,
     requirements_path: Path,
     pending_path: Path,
+    output_path: Path | None = None,
 ) -> dict[str, Any]:
     values = metadata(snapshot_path.read_text(encoding="utf-8"))
     expected = {
@@ -156,7 +160,7 @@ def validate_snapshot(
         "requirements_version": requirements_version(requirements_path),
         "requirements_hash": requirements_hash(requirements_path),
         "pending_hash": requirements_hash(pending_path),
-        "current_git_diff": ",".join(changed_paths(root)) or "clean",
+        "current_git_diff": ",".join(changed_paths(root, {output_path.resolve().relative_to(root.resolve()).as_posix()} if output_path else set())) or "clean",
     }
     missing = [field for field in (*expected, "generated_at", "current_git_diff") if not values.get(field)]
     mismatches = [field for field, value in expected.items() if values.get(field) != value]
@@ -201,12 +205,13 @@ def main() -> None:
                     args.pending,
                     args.generated_at,
                     _load_decision(args.decision),
+                    output,
                 ),
                 encoding="utf-8",
             )
             print(json.dumps({"path": output.as_posix()}, ensure_ascii=False))
         else:
-            result = validate_snapshot(args.root, args.snapshot, args.requirements, args.pending)
+            result = validate_snapshot(args.root, args.snapshot, args.requirements, args.pending, args.snapshot)
             print(json.dumps(result, ensure_ascii=False))
             if not result["ok"]:
                 raise SystemExit(3)
