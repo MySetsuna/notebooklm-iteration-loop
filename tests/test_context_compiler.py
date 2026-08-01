@@ -19,6 +19,7 @@ class ContextCompilerTests(unittest.TestCase):
                 modify=["auth/service.py"],
                 constraints=["OAuth contract unchanged"],
                 failed_knowledge=["cache replacement regressed auth"],
+                baseline_files={"existing.txt": "abc"},
             )
             self.assertEqual(context["files"], ["auth/service.py"])
             self.assertEqual(context["read_policy"]["allowed_files"], ["auth/service.py", "tests/test_auth_timeout.py"])
@@ -27,6 +28,7 @@ class ContextCompilerTests(unittest.TestCase):
             self.assertTrue(context["response_policy"]["forbid_background_recap"])
             self.assertEqual(context["codegraph"]["queries"], ["AuthService.login"])
             self.assertNotIn("repo_map", context)
+            self.assertEqual(context["baseline"]["files"], {"existing.txt": "abc"})
 
     def test_rejects_path_escape_and_file_budget_overrun(self):
         with tempfile.TemporaryDirectory() as temp_dir:

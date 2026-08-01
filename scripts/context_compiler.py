@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 try:
+    from .iteration_gate import snapshot_changed_files
     from .requirements_store import select_records
 except ImportError:  # direct script execution
+    from iteration_gate import snapshot_changed_files
     from requirements_store import select_records
 
 SCHEMA_VERSION = 1
@@ -51,6 +53,7 @@ def compile_context(
     requirements_file: str = "docs/REQUIREMENTS-SPEC.md",
     requirements_max_bytes: int = 16384,
     codegraph_queries: Iterable[str] = (),
+    baseline_files: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     if not task.strip():
         raise ValueError("task must not be empty")
@@ -116,6 +119,7 @@ def compile_context(
             "format": "delta_evidence_next",
             "forbid_background_recap": True,
         },
+        "baseline": {"files": dict(sorted((baseline_files or {}).items()))},
         "budget": budget,
     }
 
@@ -158,6 +162,7 @@ def main() -> None:
             args.requirements_file,
             args.requirements_max_bytes,
             args.codegraph_query,
+            snapshot_changed_files(args.root),
         )
         output = args.output if args.output.is_absolute() else args.root / args.output
         write_context(output, context)

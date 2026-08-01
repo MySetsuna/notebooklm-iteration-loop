@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -38,6 +39,39 @@ def _changed_paths(root: Path) -> set[str]:
     if untracked.returncode == 0:
         changed.update(_items(untracked.stdout.splitlines()))
     return changed
+
+
+def _fingerprint(root: Path, relative: str) -> str:
+    path = root / relative
+    if not path.exists():
+        return "missing"
+    if not path.is_file():
+        return "non-file"
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def snapshot_changed_files(root: Path) -> dict[str, str]:
+    """Fingerprint pre-existing user work; workflow runtime is never business scope."""
+    return {
+        path: _fingerprint(root, path)
+        for path in sorted(_changed_paths(root))
+        if path != ".iteration" and not path.startswith(".iteration/")
+    }
+
+
+def _changed_after_baseline(
+    root: Path, current: set[str], baseline: dict[str, str]
+) -> set[str]:
+    unchanged = {
+        path
+        for path, expected in baseline.items()
+        if path in current and _fingerprint(root, path) == expected
+    }
+    return current - unchanged
 
 
 def check_context(context: dict[str, Any]) -> list[str]:
@@ -88,7 +122,19 @@ def check_gate(
 ) -> dict[str, Any]:
     violations = check_context(context)
     allowed = _items(context.get("write_policy", {}).get("allowed_paths", []))
-    changed = _items(changed_paths) if changed_paths is not None else _changed_paths(root)
+    if changed_paths is not None:
+        changed = _items(changed_paths)
+    else:
+        current = {
+            path
+            for path in _changed_paths(root)
+            if path != ".iteration" and not path.startswith(".iteration/")
+        }
+        baseline = context.get("baseline", {}).get("files", {})
+        if baseline and not isinstance(baseline, dict):
+            violations.append("baseline_invalid")
+            baseline = {}
+        changed = _changed_after_baseline(root, current, baseline)
     outside = sorted(changed - allowed)
     if outside:
         violations.append("write_scope_exceeded")

@@ -4,7 +4,7 @@ from subprocess import CompletedProcess
 from unittest.mock import patch
 
 from scripts.iteration_budget import DEFAULT_BUDGET
-from scripts.iteration_gate import _changed_paths, check_gate
+from scripts.iteration_gate import _changed_paths, _fingerprint, check_gate
 
 
 def context(**overrides):
@@ -37,6 +37,21 @@ class IterationGateTests(unittest.TestCase):
     def test_allows_only_scoped_changes(self):
         result = check_gate(Path("."), context(), DEFAULT_BUDGET, {}, ["auth/service.py"])
         self.assertTrue(result["ok"])
+
+    def test_preexisting_user_file_is_ignored_only_while_unchanged(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            legacy = root / "legacy.txt"
+            legacy.write_text("user work", encoding="utf-8")
+            value = context(baseline={"files": {"legacy.txt": _fingerprint(root, "legacy.txt")}})
+            with patch("scripts.iteration_gate._changed_paths", return_value={"legacy.txt"}):
+                self.assertTrue(check_gate(root, value, DEFAULT_BUDGET, {})["ok"])
+                legacy.write_text("mutated by iteration", encoding="utf-8")
+                result = check_gate(root, value, DEFAULT_BUDGET, {})
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["outside_write_scope"], ["legacy.txt"])
 
     def test_rejects_full_scan_unscoped_write_and_budget(self):
         value = context(codegraph={"mode": "full", "full_rebuild": True})
