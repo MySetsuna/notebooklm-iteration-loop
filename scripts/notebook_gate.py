@@ -126,7 +126,7 @@ def evaluate(
         reasons.append("multiple_solutions_not_evidenced")
     if "conflicting_root_cause_evidence" in triggers and len(decision.get("hypotheses", [])) < 2:
         reasons.append("conflicting_hypotheses_not_evidenced")
-    snapshot = validate_snapshot(root, snapshot_path, requirements_path, pending_path)
+    snapshot = validate_snapshot(root, snapshot_path, requirements_path, pending_path, snapshot_path)
     if not snapshot["ok"]:
         reasons.append("state_snapshot_stale")
     snapshot_decision_hash = metadata(snapshot_path.read_text(encoding="utf-8")).get(
