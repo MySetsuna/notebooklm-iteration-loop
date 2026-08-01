@@ -21,7 +21,7 @@ description: >
 6. Agent 只读 `.iteration/context.json` 允许集合；每轮受 budget/usage 与 `iteration_gate.py` 约束。
 7. 主 Agent 保留需求审批、冲突裁决、联合验证、状态、提交与推送权；Worker 不调用 NotebookLM。
 8. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
-9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。
+9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。`.iteration` 默认运行态不提交；仅当用户明确授权“提交迭代状态”时，才可提交其中的非敏感状态、决策、受控证据与执行包。Cookie、Token、浏览器存储、锁文件、临时凭据与原始敏感日志仍不得提交。
 10. `.kiro/specs/` 仅作事后对齐记录，不作需求、设计、规划或实现权威。
 11. 每项用户任务须先绑定请求 intake；空 Pending 文件不再足以证明任务已获批准。
 12. 文档统一 UTF-8 无 BOM；Windows PowerShell 5.1 读取须显式用
