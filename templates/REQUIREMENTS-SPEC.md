@@ -1,20 +1,20 @@
-# <项目名> · 需求规范(REQUIREMENTS-SPEC)
+# <Project> · Requirements Specification
 
-> NotebookLM 唯一已批准需求合同；Pending 仅存本地 `PENDING-REQUIREMENTS.md`。
+> The sole approved-requirements contract for NotebookLM. Pending work exists only in local `PENDING-REQUIREMENTS.md`.
 
-- 需求版本:`v0.1.0`
+- Requirements version:`v0.1.0`
 
-## 正式需求 (Active Requirements)
+## Active Requirements
 
-### REQ-001 · <标题>
+### REQ-001 · <Title>
 
-- 状态:`ACTIVE`
-- 版本:`v0.1.0`
-- 行为:`<已获批准的当前需求>`
-- 边界:`<范围与非目标>`
-- 验收:`<确定性信号>`
-- 追踪:`<代码/测试证据；尚未实现则写 gap>`
+- Status:`ACTIVE`
+- Version:`v0.1.0`
+- Behavior:`<current approved requirement>`
+- Boundary:`<scope and non-goals>`
+- Acceptance:`<deterministic signal>`
+- Traceability:`<code/test evidence; write gap when unimplemented>`
 
-## 修订账本 (Revision Ledger)
+## Revision Ledger
 
-关闭 Pending、历史修订与批准证据写入 `docs/archive/events-YYYY-MM.jsonl`，本文件只保留当前 Active。
+Write closed Pending items, historical revisions, and approval evidence to `docs/archive/events-YYYY-MM.jsonl`; this file retains current Active items only.

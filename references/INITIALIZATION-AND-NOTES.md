@@ -1,11 +1,10 @@
-# 初始化、来源清理与 Notes
+# Initialization, source cleanup, and Notes
 
-仅在笔记本不合规、来源需压缩、或愿景/notes 需整理时读。
+Read this only when the notebook is non-compliant, sources require consolidation, or vision/Notes need maintenance.
 
-1. 先按主 Skill 开工闸确认基线；CodeGraph 索引不存在时停下请所有者决定，勿自动初始化。
-2. 用代码事实区分来源：已实现/无关可删；未实现愿景先转 note；仍有效的决策理由压进当前
-   `PROJECT-STATE` 或获批需求。
-3. 删除来源前确认两份替代真相源已入库并获用户明确同意。终态必须恰两常驻源。
-4. `open` 愿景必须有 note；仅代码存在且确定性验收通过，才可标 `implemented` 或删除。用户轨物理步骤
-   不等于缺功能代码，但未实现功能不可借此清空 notes。
-5. 存量来源压缩时按领域查询、只写本地临时 digest；将事实合入两真相源后再获授权删除碎片来源。
+1. First confirm the baseline through the main Skill start gate. If the CodeGraph index is absent, stop and ask the owner to decide; never initialize it automatically.
+2. Use code facts to classify sources: delete implemented or irrelevant material; turn unimplemented vision into a Note; compress still-valid rationale into the current `PROJECT-STATE` or approved requirements.
+3. Before deleting a source, confirm both replacement truth sources are present and the user explicitly agrees. The end state is exactly two persistent sources.
+4. An `open` vision requires a Note. Mark it `implemented` or delete it only after the corresponding code exists and deterministic acceptance passes. User-side physical steps do not imply missing feature code, but they also cannot be used to clear unimplemented Notes.
+5. At every completed iteration, reconcile all Notes created or relied on by that iteration. Write the compact verified decision/evidence record to local archive; then delete superseded Notes, or label retained Notes `Completed — <iteration-id>` with closure evidence. Never retain a stale planning Note merely because it was once useful.
+6. When consolidating existing sources, query by domain and write only a local temporary digest. Merge facts into the two truth sources, then obtain authorization before deleting fragmented sources.

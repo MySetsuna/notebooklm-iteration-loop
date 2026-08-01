@@ -16,23 +16,27 @@ except ImportError:  # direct script execution
     from requirements_intake import inspect_manifest
     from requirements_store import read_records, validate_records
 
-PENDING_HEADING = "## 待审批变更 (Pending Changes)"
-ACTIVE_HEADING = "## 正式需求 (Active Requirements)"
-LEDGER_HEADING = "## 修订账本 (Revision Ledger)"
+PENDING_HEADING = "## Pending Changes"
+ACTIVE_HEADING = "## Active Requirements"
+LEDGER_HEADING = "## Revision Ledger"
 PENDING_ID = re.compile(r"\bPENDING-REQ-[A-Za-z0-9._-]+\b")
-PLACEHOLDER_ONLY = re.compile(r"^\s*(?:_?无_?|[-*]\s*无|<!--.*?-->)\s*$", re.S)
+PLACEHOLDER_ONLY = re.compile(r"^\s*(?:_?(?:none|无)_?|[-*]\s*(?:none|无)|<!--.*?-->)\s*$", re.S | re.I)
+LEGACY_PENDING_HEADING = "## 待审批变更 (Pending Changes)"
+LEGACY_ACTIVE_HEADING = "## 正式需求 (Active Requirements)"
+LEGACY_LEDGER_HEADING = "## 修订账本 (Revision Ledger)"
 
 
 def inspect_documents(active_path: Path, pending_path: Path) -> dict[str, object]:
     active = active_path.read_text(encoding="utf-8")
     pending = pending_path.read_text(encoding="utf-8")
-    active_missing = [heading for heading in (ACTIVE_HEADING, LEDGER_HEADING) if heading not in active]
-    active_forbidden = PENDING_HEADING in active or bool(re.search(r"(?m)^###\s+PENDING-REQ-", active))
-    pending_missing = PENDING_HEADING not in pending
+    active_missing = [heading for heading, legacy in ((ACTIVE_HEADING, LEGACY_ACTIVE_HEADING), (LEDGER_HEADING, LEGACY_LEDGER_HEADING)) if heading not in active and legacy not in active]
+    active_forbidden = PENDING_HEADING in active or LEGACY_PENDING_HEADING in active or bool(re.search(r"(?m)^###\s+PENDING-REQ-", active))
+    pending_heading = PENDING_HEADING if PENDING_HEADING in pending else LEGACY_PENDING_HEADING
+    pending_missing = pending_heading not in pending
     pending_ids: list[str] = []
     unstructured = False
     if not pending_missing:
-        body = pending[pending.index(PENDING_HEADING) + len(PENDING_HEADING) :].strip()
+        body = pending[pending.index(pending_heading) + len(pending_heading) :].strip()
         body = re.sub(r"<!--.*?-->", "", body, flags=re.S).strip()
         if body and not PLACEHOLDER_ONLY.fullmatch(body):
             pending_ids = sorted(set(PENDING_ID.findall(body)))

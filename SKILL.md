@@ -1,43 +1,43 @@
 ---
 name: notebooklm-iteration-loop
 description: >
-  用 CodeGraph、Codex 与 NotebookLM 低消耗迭代项目；维护获批需求、项目状态快照、需求审批、
-  确定性质量闸、局部代码查询、默认有界多 Agent 编排与按条件触发的 NotebookLM 冷循环。
-  当用户要求初始化或运行迭代、并行派发 Agent、规划下一步、整理项目笔记本、
-  分析复杂根因/架构决策，或限制扫描与模型消耗时使用。
+  Iterate projects efficiently with CodeGraph, Codex, and NotebookLM. Maintain approved
+  requirements, project-state snapshots, deterministic quality gates, local code queries,
+  bounded multi-agent orchestration, and a conditional NotebookLM cold loop. Use for
+  initialization, iterations, bounded parallel work, planning, notebook hygiene, complex
+  root-cause or architecture decisions, and constrained scans or model usage.
 ---
 
-# CodeGraph + Codex + NotebookLM 低消耗迭代
+# Efficient CodeGraph + Codex + NotebookLM Iteration
 
-目标：确定性事实、局部查询、最小修改、验证闭环；NotebookLM 仅作低频战略层。
+Goal: deterministic facts, local queries, minimal changes, and verified closure. NotebookLM is a low-frequency strategy layer only.
 
-## 不变量
+## Invariants
 
-1. 事实轴：运行/测试/构建 → 当前代码与 Git → CodeGraph → `PROJECT-STATE`；低位不得改写高位。
-2. 规范轴：用户明确批准 → `REQUIREMENTS-SPEC` → 当前合同；现有代码与测试不得把偏离变成需求。
-3. NotebookLM 不裁决代码事实、根因、需求批准或质量；其输出只作待验证建议。
-4. NotebookLM 常驻仅两源：已批准 `REQUIREMENTS-SPEC` 与运行时 `PROJECT-STATE` 快照。
-5. Pending 仅存本地 `PENDING-REQUIREMENTS.md`；不上传、不实施、不进入已批准需求源。
-6. Agent 只读 `.iteration/context.json` 允许集合；每轮受 budget/usage 与 `iteration_gate.py` 约束。
-7. 主 Agent 保留需求审批、冲突裁决、联合验证、状态、提交与推送权；Worker 不调用 NotebookLM。
-8. 不自动初始化 CodeGraph；不上传原始日志；不承诺未经 `token-usage --all` A/B 验证的节省。
-9. 删除来源、覆盖用户工作、远端合并/重写历史须单独授权。`.iteration` 默认运行态不提交；仅当用户明确授权“提交迭代状态”时，才可提交其中的非敏感状态、决策、受控证据与执行包。Cookie、Token、浏览器存储、锁文件、临时凭据与原始敏感日志仍不得提交。
-10. `.kiro/specs/` 仅作事后对齐记录，不作需求、设计、规划或实现权威。
-11. 每项用户任务须先绑定请求 intake；空 Pending 文件不再足以证明任务已获批准。
-12. 文档统一 UTF-8 无 BOM；Windows PowerShell 5.1 读取须显式用
-    `Get-Content -Encoding UTF8`，不得以默认 ANSI 解码所得文本回写。
+1. Fact order: runtime/tests/build → current code and Git → CodeGraph → `PROJECT-STATE`; lower-order evidence cannot rewrite higher-order evidence.
+2. Specification order: explicit user approval → `REQUIREMENTS-SPEC` → current contract; existing code and tests cannot turn a deviation into a requirement.
+3. NotebookLM does not decide code facts, root cause, requirement approval, or quality. Its output is only a hypothesis to verify.
+4. NotebookLM has exactly two persistent sources: approved `REQUIREMENTS-SPEC` and the runtime `PROJECT-STATE` snapshot.
+5. Pending work exists only in local `PENDING-REQUIREMENTS.md`; never upload, implement, or add it to the approved-requirements source.
+6. Agents may read only the allow-list in `.iteration/context.json`; every round is bounded by budget/usage and `iteration_gate.py`.
+7. The primary agent retains authority for requirement approval, conflict resolution, joint verification, state, commit, and push. Workers never call NotebookLM.
+8. Do not initialize CodeGraph automatically, upload raw logs, or claim savings without a `token-usage --all` A/B measurement.
+9. Deleting sources, overwriting user work, and remote merge/history rewrite require separate authorization. Do not commit `.iteration` runtime state by default. Only explicit user authorization to “commit iteration state” permits non-sensitive state, decisions, controlled evidence, and execution packets; never commit cookies, tokens, browser storage, lock files, temporary credentials, or raw sensitive logs.
+10. `.kiro/specs/` is a post-hoc alignment record only; it is not authoritative for requirements, design, planning, or implementation.
+11. Every user task must first bind to a request intake; an empty Pending file alone never proves approval.
+12. Documents are UTF-8 without BOM. On Windows PowerShell 5.1, always read with `Get-Content -Encoding UTF8`; never write back text decoded by the ANSI default.
+13. At the end of every completed iteration, reconcile NotebookLM Notes: retain only an explicitly useful current note, otherwise delete it or mark it `Completed` with the iteration ID and closure evidence. Archive the compact decision/evidence record locally; do not leave open-ended planning Notes behind.
 
-## 请求入口闸
+## Request-intake gate
 
-此闸先于 Git 开工闸、CodeGraph 探索、上下文编译、派发及代码修改。
+This gate precedes the Git start gate, CodeGraph exploration, context compilation, dispatch, and code changes.
 
-1. 把当前用户请求原文存入本地 `.iteration/request.txt`（不提交、不上传），复制
-   `templates/REQUIREMENTS-INTAKE.json` 为 `.iteration/intake-decision.json`。
-2. 仅可分类：
-   - `active`：任务完全落在现有 Active `REQ-*`；列出全部 ID。
-   - `pending`：新增/修订/删除/Fix 需求，或目标、范围、非目标、验收、假设任一未定。
-   - `approved`：当前消息明确批准此前展示的具体 Pending；须绑定此前 intake。
-3. `pending` 时，先以 `requirements_store.py write` 写完整 Pending，再生成 intake：
+1. Store the exact current user request in local `.iteration/request.txt` (do not commit or upload it), then copy `templates/REQUIREMENTS-INTAKE.json` to `.iteration/intake-decision.json`.
+2. Classify only as:
+   - `active`: the task is fully covered by existing active `REQ-*`; list every ID.
+   - `pending`: a new, revised, removed, or fixed requirement, or any unresolved goal, scope, non-goal, acceptance criterion, or assumption.
+   - `approved`: the current message explicitly approves a previously shown Pending item; bind it to the prior intake.
+3. For `pending`, write the complete Pending record with `requirements_store.py write`, then create intake:
 
 ```text
 python <skill>/scripts/requirements_intake.py build \
@@ -46,14 +46,10 @@ python <skill>/scripts/requirements_intake.py build \
   --intake-file .iteration/intakes/INTAKE-ID.json
 ```
 
-向用户原样展示 Pending ID、规范稿与 `draft_sha256`，随即结束本轮；仅可请其批准、修改或拒绝。
-禁止开工、制合同、派 Agent、调 NotebookLM、写 Kiro 记录或改业务代码。
-`pending` build 以退出码 `3` 表示“已记录但未批准”，属预期停机，不得重试绕过。
+Show the Pending ID, specification draft, and `draft_sha256` verbatim, then end the turn; only request approval, revision, or rejection. Do not start work, create a contract, dispatch an agent, call NotebookLM, write a Kiro record, or change business code. A `pending` build exits `3`, meaning “recorded but unapproved”; this is an expected stop and must not be bypassed by retrying.
 
-4. 用户批准时，以 `requirements_store.py write --evidence "<批准原话>"` 原子提升并移除 Pending；
-   `approved` intake 以 `--previous-intake <此前 intake>` 绑定已展示草稿。模糊肯定、未展示草稿、
-   缺旧 intake 或无批准原话均不得提升。
-5. `active` 或 `approved` 生成 intake 后，必须运行：
+4. On approval, atomically promote and remove Pending with `requirements_store.py write --evidence "<approval quote>"`. An `approved` intake binds the shown draft with `--previous-intake <prior intake>`. Ambiguous assent, an unseen draft, a missing prior intake, or missing approval text cannot promote it.
+5. After `active` or `approved` intake, run:
 
 ```text
 python <skill>/scripts/requirements_gate.py assert-task-executable \
@@ -61,43 +57,35 @@ python <skill>/scripts/requirements_gate.py assert-task-executable \
   --request-file .iteration/request.txt --intake-file .iteration/intakes/INTAKE-ID.json
 ```
 
-缺 intake、请求/hash 失配、文档变化、Pending 未清或批准链不完整皆停止。脚本不能读取宿主聊天；
-故主 Agent 不执行此入口闸即属流程失败，不得用旧 intake 或空 Pending 代替。
+Stop for missing intake, request/hash mismatch, document changes, uncleared Pending items, or an incomplete approval chain. The script cannot read host chat; a primary agent that skips this gate has failed the workflow and cannot substitute an old intake or an empty Pending file.
 
-## 开工闸
+## Start gate
 
-先检查分支、upstream、ahead/behind、dirty。非 `0/0`、detached、无 upstream 或遗留 dirty 时，
-先取得继续当前基线的裁定；禁擅自 pull/merge/rebase/reset/checkout/stash。
+Check branch, upstream, ahead/behind, and dirty state. For non-`0/0`, detached HEAD, missing upstream, or pre-existing dirty work, obtain a decision to continue on the current baseline. Do not independently pull, merge, rebase, reset, checkout, or stash.
 
 ```text
 python <skill>/scripts/preflight.py --project-root <repo> --strict
 ```
 
-需求审批与质量细则见 [`references/QUALITY-AND-REQUIREMENTS.md`](./references/QUALITY-AND-REQUIREMENTS.md)。
+See [`references/QUALITY-AND-REQUIREMENTS.md`](./references/QUALITY-AND-REQUIREMENTS.md) for approval and quality details.
 
-## 默认热循环
+## Default hot loop
 
-1. 入口 intake 已通过 `assert-task-executable`；首轮运行 `iteration_budget.py init` 与
-   `iteration_budget.py init-usage` 建立 `.iteration/budget.json` 和 `.iteration/usage.json`；
-   每轮按实际工具调用更新 usage。
-2. 以 `requirements_store.py read --id REQ-*` 取当前合同引用条目；勿整读需求或历史。
-3. 生成 `.iteration/context.json`，显式列 requirement/symbol/file/test/modify/constraint；随即过
-   `iteration_gate.py`。上下文细则见 [`references/CONTEXT-CONTROL.md`](./references/CONTEXT-CONTROL.md)。
-4. 看受控 diff；CodeGraph 依次查目标 symbol → 文件 → 直接调用/依赖 → 当前模块。仅必要时扩相邻模块；
-   全仓分析只用于首次、索引异常、重大分支/边界/数据模型变化、事实矛盾或用户明确要求。
-5. 默认运行多 Agent 编排闸；按 [`references/MULTI-AGENT-PROTOCOL.md`](./references/MULTI-AGENT-PROTOCOL.md)
-   制有界 packet。仅安全独立波次并行；否则派一个有界 Worker 或串行。用户可关闭或指定后端。
-6. 一轮只做一项已批准目标；禁顺带重构、优化、升级、扩范围或改无关文件。
-7. 主 Agent 回收结构化 result 后重跑目标测试、相关回归及适用 typecheck/lint/build/runtime；
-   不得凭 Worker 自述或传输回执宣布成功。
-8. 只更新新增事实与状态变化；历史用 `archive.py append`，原始日志留本地/CI。
-9. 再跑 requirements/iteration gate；Reviewer 只读复核合同、diff、失败知识与验证。
-10. 用户明确说 `执行Kiro补记` 或调用 `$record-kiro-spec` 时，方读取并执行
-    [`skills/record-kiro-spec/SKILL.md`](./skills/record-kiro-spec/SKILL.md)；否则跳过。
+1. The request intake has passed `assert-task-executable`. On the first round run `iteration_budget.py init` and `iteration_budget.py init-usage` to create `.iteration/budget.json` and `.iteration/usage.json`; update usage from actual tool calls every round.
+2. Read only the referenced current contract records with `requirements_store.py read --id REQ-*`; do not bulk-read requirements or history.
+3. Create `.iteration/context.json` with explicit requirement/symbol/file/test/modify/constraint entries, then run `iteration_gate.py`. See [`references/CONTEXT-CONTROL.md`](./references/CONTEXT-CONTROL.md).
+4. Inspect the controlled diff. Use CodeGraph in order: target symbol → file → direct callers/dependencies → current module. Expand to adjacent modules only when needed. Full-repository analysis is reserved for first use, index faults, material branch/boundary/data-model changes, conflicting facts, or an explicit user request.
+5. Run the default multi-agent orchestration gate and create a bounded packet under [`references/MULTI-AGENT-PROTOCOL.md`](./references/MULTI-AGENT-PROTOCOL.md). Parallelize only safe independent waves; otherwise dispatch one bounded worker or work serially. The user may disable or select a backend.
+6. Complete one approved objective per round. Do not bundle refactors, optimizations, upgrades, scope expansion, or unrelated files.
+7. After structured worker results return, the primary agent reruns target tests, relevant regressions, and applicable typecheck/lint/build/runtime checks. A worker claim or delivery receipt is never success evidence.
+8. Update only new facts and state changes. Append history with `archive.py append`; keep raw logs local or in CI.
+9. Rerun the requirements/iteration gates. A reviewer is read-only and checks the contract, diff, known failures, and evidence.
+10. Only when the user says `execute Kiro backfill` or invokes `$record-kiro-spec`, read and run [`skills/record-kiro-spec/SKILL.md`](./skills/record-kiro-spec/SKILL.md); otherwise skip it.
+11. On completed iteration closure, perform the Note reconciliation required by invariant 13 before reporting completion.
 
-默认：局部查询、局部修改、局部验证、**不调用 NotebookLM**。
+Default: local query, local change, local verification, **no NotebookLM call**.
 
-## 多 Agent 编排
+## Multi-agent orchestration
 
 ```text
 python <skill>/scripts/agent_dispatch.py build --root <repo> \
@@ -106,24 +94,11 @@ python <skill>/scripts/agent_dispatch.py build --root <repo> \
   --output-dir .iteration/agents
 ```
 
-默认 `enabled:true`、后端 `auto`；顺序 Ridge Agent's Commune → tmux → 宿主 native sub-agent → serial。
-仅能力缺失、明确 unsupported、或任务接受前 spawn 失败方降级；一经接受不得重派，防重复执行。
-主 Agent 为每包标 `light|medium|complex`；脚本映射 `secondary+low|intermediate+medium|frontier+high`。
-需更深推理时显式覆写 effort；不得由 Worker 自提级。Ridge 先调 `ridge_list_launch_profiles`，
-把原样能力快照交 `--capabilities`；脚本选择 profile，spawn 前复核 revision。
-写 Worker 仅在独立 worktree 且写集/独占资源无冲突时并行；共享工作区自动串行。
-大包传文件路径或 Ridge stash URI，消息勿复制全文。投递、终端接受、Agent ACK、执行结果、主 Agent 验证
-五层分列；只有匹配 baseline/packet/result hash 且验证证据齐全的 result 可进入主 Agent 联合验证。
-Ridge 连接、模型与启动参数须从当前宿主 MCP schema、能力清单及 launcher help 动态发现；禁记录或猜测
-本机端口、Token、路径、pane ID、模型名、命令。若无 Ridge 工具，报告缺失；不得以 Mycelium 代投。
+Defaults: `enabled:true`, backend `auto`; order is Ridge Agent's Commune → tmux → host native sub-agent → serial. Fall back only for missing capability, explicit unsupported state, or spawn failure before task acceptance. Never redispatch an accepted task. The primary agent labels each packet `light|medium|complex`; scripts map those to `secondary+low|intermediate+medium|frontier+high`. Deeper reasoning requires an explicit override; workers cannot self-escalate. For Ridge, first call `ridge_list_launch_profiles`, pass the unmodified capability snapshot via `--capabilities`, let the script choose the profile, and recheck revision before spawn. Writing workers run in parallel only when separate worktrees and write/locked-resource sets cannot conflict; shared workspaces serialize. Pass large packets by file path or Ridge stash URI, never full text in messages. Keep delivery, terminal acceptance, agent ACK, execution result, and primary verification separate. Only results with matching baseline/packet/result hashes and complete verification evidence can enter joint verification. Discover Ridge connectivity, models, and launch options dynamically from the host MCP schema, capability list, and launcher help; never record or guess local ports, tokens, paths, pane IDs, model names, or commands. If Ridge tools are absent, report that fact; never relay through Mycelium.
 
-## NotebookLM 冷闸
+## NotebookLM cold gate
 
-仅 [`references/HOT-COLD-PROTOCOL.md`](./references/HOT-COLD-PROTOCOL.md) 所列十类触发可进入冷循环。
-需要登录、刷新凭据或执行 NotebookLM CLI 前，先使用
-[`skills/refresh-notebooklm-auth/SKILL.md`](./skills/refresh-notebooklm-auth/SKILL.md)。
-本机固定可通代理为 `http://127.0.0.1:51081`：CLI 环境变量与 Chrome
-`--proxy-server` 必须同时传入；不得只给其中一端，也不得改系统代理。
+Only the ten triggers in [`references/HOT-COLD-PROTOCOL.md`](./references/HOT-COLD-PROTOCOL.md) may enter the cold loop. Before login, credential refresh, or NotebookLM CLI execution, use [`skills/refresh-notebooklm-auth/SKILL.md`](./skills/refresh-notebooklm-auth/SKILL.md). The fixed reachable local proxy is `http://127.0.0.1:51081`: provide it to both CLI environment variables and Chrome `--proxy-server`; never configure only one side or change the system proxy.
 
 ```text
 python <skill>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py launch \
@@ -132,11 +107,9 @@ python <skill>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py status \
   --cdp-url http://127.0.0.1:19222
 ```
 
-NotebookLM 当前有效站点可能为 `https://notebook.google.com/`；不得因域名与
-`notebooklm.google.com` 不同而判定未登录。认证提取只输出成功/失败及非敏感元数据，
-不得读取、打印、提交 Cookie、Token 或本地凭据。
+The valid NotebookLM site may currently be `https://notebook.google.com/`; do not infer logged-out state merely because it differs from `notebooklm.google.com`. Authentication extraction may report only success/failure and non-sensitive metadata; never read, print, or commit cookies, tokens, or local credentials.
 
-调用前生成决策 JSON 与状态快照：
+Create the decision JSON and state snapshot before calling:
 
 ```text
 python <skill>/scripts/state_snapshot.py build --root <repo> \
@@ -148,16 +121,15 @@ python <skill>/scripts/notebook_gate.py assert-allowed --root <repo> \
   --decision .iteration/decision.json --trigger <trigger>
 ```
 
-闸通过后，才以快照替换 NotebookLM 的 `PROJECT-STATE` 来源并查询。收到结果后先运行
-`notebook_gate.py validate-output`，再以代码、CodeGraph、获批需求和测试验证；禁止直接实施或写入需求。
+Only after the gate passes may the snapshot replace NotebookLM's `PROJECT-STATE` source and be queried. Validate output with `notebook_gate.py validate-output`, then verify against code, CodeGraph, approved requirements, and tests. Never implement or write requirements directly from NotebookLM output.
 
-## 文档
+## Documents
 
-- `REQUIREMENTS-SPEC.md`：仅 Active；批准后覆盖 NotebookLM 来源。
-- `PENDING-REQUIREMENTS.md`：本地审批界面；不上传。
-- `PROJECT-STATE.md`：稳定 tracked 正文；`state_snapshot.py` 在 `.iteration/` 生成动态尾段。
-- `docs/archive/events-YYYY-MM.jsonl`：分片、append-only、有界 tail；不上传。
-- 当前合同与 `WORKFLOW` 保持 Markdown；运行 context/decision/snapshot 不作第三常驻来源。
-- `.kiro/specs/`：可选事后对齐副本；不上传 NotebookLM，不反向驱动主流程。
+- `REQUIREMENTS-SPEC.md`: active items only; replace the NotebookLM source after approval.
+- `PENDING-REQUIREMENTS.md`: local approval surface; never upload.
+- `PROJECT-STATE.md`: stable tracked body; `state_snapshot.py` creates the dynamic tail in `.iteration/`.
+- `docs/archive/events-YYYY-MM.jsonl`: sharded, append-only, bounded tail; never upload.
+- The current contract and `WORKFLOW` remain Markdown; runtime context/decision/snapshot are not a third persistent source.
+- `.kiro/specs/`: optional post-hoc alignment copies; never upload to NotebookLM or drive the main workflow backward.
 
-出现 Pending、状态快照失配、触发证据不足、索引矛盾、验证失败、越界写或预算耗尽，即停止相应动作。
+Stop the relevant action for Pending work, a state-snapshot mismatch, insufficient trigger evidence, index contradiction, verification failure, out-of-scope writes, or budget exhaustion.

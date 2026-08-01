@@ -1,20 +1,19 @@
-# JSONL 历史归档
+# JSONL historical archive
 
-历史只存 `docs/archive/events-YYYY-MM.jsonl`；一行一个独立 JSON 对象。Git 保留被迁移 Markdown 的
-历史，工作树不保留人读副本。
+History lives only in `docs/archive/events-YYYY-MM.jsonl`, one independent JSON object per line. Git preserves the history of migrated Markdown; the working tree retains no human-readable duplicate.
 
-最小 schema：
+Minimal schema:
 
 ```json
 {"schema_version":1,"id":"unique-id","at":"YYYY-MM-DD","type":"iteration|guidance|ledger|telemetry","facts":["bounded fact"],"evidence":["command/sha/path"],"paths":["relative/path"],"symbols":["symbol"],"next":["next action"]}
 ```
 
-- `facts` 是已验证事实，不写原始模型长文或终端全文。
-- `evidence` 只存命令、退出码、hash、artifact/CI 指针。
-- `id` 由调用方稳定指定；不需要人读标题。
-- 任意 ID 查找只在规模证明必要时增加**可重建** sidecar；当前禁止 SQLite/二进制索引。
+- `facts` are verified facts, never raw model prose or complete terminal output.
+- `evidence` contains only commands, exit codes, hashes, or artifact/CI pointers.
+- The caller supplies a stable `id`; a human-readable title is unnecessary.
+- Add a rebuildable sidecar for ID lookup only when scale proves it necessary; SQLite and binary indexes are prohibited for now.
 
-使用本 skill 的标准库工具：
+Use the standard-library tools supplied by this skill:
 
 ```text
 python <skill>/scripts/archive.py append --root docs/archive --record <record.json>
@@ -22,5 +21,4 @@ python <skill>/scripts/archive.py tail --root docs/archive --limit 5 --type iter
 python <skill>/scripts/archive.py migrate-markdown --root docs/archive --source <old.md> --id <id> --at YYYY-MM-DD --type guidance
 ```
 
-`tail` 从文件尾部按字节上限读取；结果不足时宁缺勿整档扫描。迁移只做一次，迁完删除旧 Markdown，
-并在 JSONL 留原路径与 SHA-256 证据。
+`tail` reads from the file end within a byte limit; when insufficient, prefer incomplete output to a full archive scan. Migrate once only, delete the former Markdown afterward, and retain its original path and SHA-256 as JSONL evidence.

@@ -1,22 +1,22 @@
-# <项目名> · 待审批需求
+# <Project> · Pending Requirements
 
-> 本文件仅存本地审批界面，不上传 NotebookLM，不构成实施合同。
+> This is a local approval surface only. Do not upload it to NotebookLM; it is not an implementation contract.
 
-## 待审批变更 (Pending Changes)
+## Pending Changes
 
-_无_
+_none_
 
 <!--
-### PENDING-REQ-<YYYYMMDD>-<NN> · <标题>
+### PENDING-REQ-<YYYYMMDD>-<NN> · <Title>
 
-- 类型:`NEW | MODIFY | REMOVE | FIX`
-- 原始意图:`<保留用户原话>`
-- 关联 Active 条款:`REQ-<...> | 无`
-- 目标行为:`<用户可观察结果>`
-- 范围:`<模块/流程>`
-- 非目标:`<明确不做>`
-- 不可动边界:`<批准前冻结的合同/路径/行为>`
-- 假设/待确认:`<不得伪装成用户要求>`
-- 确定性验收:`<命令/断言/退出码>`
-- 预期追踪:`REQ → code symbol/path → test`
+- Type:`NEW | MODIFY | REMOVE | FIX`
+- Original intent:`<preserve the user's words>`
+- Related Active requirement:`REQ-<...> | none`
+- Target behavior:`<user-observable outcome>`
+- Scope:`<module/flow>`
+- Non-goals:`<explicitly excluded work>`
+- Frozen boundary:`<contract/path/behavior frozen before approval>`
+- Assumptions/open questions:`<never present assumptions as user requirements>`
+- Deterministic acceptance:`<command/assertion/exit code>`
+- Expected traceability:`REQ → code symbol/path → test`
 -->

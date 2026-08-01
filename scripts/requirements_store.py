@@ -9,31 +9,44 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
-PENDING_HEADING = "## 待审批变更 (Pending Changes)"
-ACTIVE_HEADING = "## 正式需求 (Active Requirements)"
-LEDGER_HEADING = "## 修订账本 (Revision Ledger)"
+PENDING_HEADING = "## Pending Changes"
+ACTIVE_HEADING = "## Active Requirements"
+LEDGER_HEADING = "## Revision Ledger"
 ENTRY_HEADING = re.compile(
     r"^###\s+((?:PENDING-)?REQ-[A-Za-z0-9._-]+)\b([^\n]*)$",
     re.MULTILINE,
 )
-EMPTY_PENDING = re.compile(r"(?m)^\s*_无_\s*$")
+EMPTY_PENDING = re.compile(r"(?m)^\s*_none_\s*$")
 REQUIRED_LABELS = {
     "pending": (
-        "类型:",
-        "原始意图:",
-        "关联 Active 条款:",
-        "目标行为:",
-        "范围:",
-        "非目标:",
-        "不可动边界:",
-        "假设/待确认:",
-        "确定性验收:",
-        "预期追踪:",
+        "Type:",
+        "Original intent:",
+        "Related Active requirement:",
+        "Target behavior:",
+        "Scope:",
+        "Non-goals:",
+        "Frozen boundary:",
+        "Assumptions/open questions:",
+        "Deterministic acceptance:",
+        "Expected traceability:",
     ),
-    "active": ("状态:", "版本:", "行为:", "边界:", "验收:", "追踪:"),
+    "active": ("Status:", "Version:", "Behavior:", "Boundary:", "Acceptance:", "Traceability:"),
 }
-PENDING_TYPE = re.compile(r"-\s*类型:\s*`?(?:NEW|MODIFY|REMOVE|FIX)\b")
+PENDING_TYPE = re.compile(r"-\s*(?:Type|类型):\s*`?(?:NEW|MODIFY|REMOVE|FIX)\b")
 PLACEHOLDER_VALUE = re.compile(r"^(?:<[^>]+>|TODO|TBD)$", re.IGNORECASE)
+LEGACY_HEADINGS = {
+    PENDING_HEADING: "## 待审批变更 (Pending Changes)",
+    ACTIVE_HEADING: "## 正式需求 (Active Requirements)",
+    LEDGER_HEADING: "## 修订账本 (Revision Ledger)",
+}
+LEGACY_LABELS = {
+    "Type:": "类型:", "Original intent:": "原始意图:", "Related Active requirement:": "关联 Active 条款:",
+    "Target behavior:": "目标行为:", "Scope:": "范围:", "Non-goals:": "非目标:",
+    "Frozen boundary:": "不可动边界:", "Assumptions/open questions:": "假设/待确认:",
+    "Deterministic acceptance:": "确定性验收:", "Expected traceability:": "预期追踪:",
+    "Status:": "状态:", "Version:": "版本:", "Behavior:": "行为:", "Boundary:": "边界:",
+    "Acceptance:": "验收:", "Traceability:": "追踪:", "Approval evidence:": "批准依据:",
+}
 
 
 def _items(values: Iterable[str]) -> list[str]:
@@ -41,25 +54,29 @@ def _items(values: Iterable[str]) -> list[str]:
 
 
 def _field_value(markdown: str, label: str) -> str | None:
-    prefix = f"- {label}"
+    prefixes = (f"- {label}", f"- {LEGACY_LABELS[label]}") if label in LEGACY_LABELS else (f"- {label}",)
     for line in markdown.splitlines():
         stripped = line.strip()
-        if stripped.startswith(prefix):
-            return stripped[len(prefix) :].strip().strip("`").strip()
+        for prefix in prefixes:
+            if stripped.startswith(prefix):
+                return stripped[len(prefix) :].strip().strip("`").strip()
     return None
 
 
 def _section_bounds(text: str, section: str) -> tuple[int, int]:
     if section == "active":
-        start = text.find(ACTIVE_HEADING)
-        end = text.find(LEDGER_HEADING, start + len(ACTIVE_HEADING))
+        active_heading = ACTIVE_HEADING if ACTIVE_HEADING in text else LEGACY_HEADINGS[ACTIVE_HEADING]
+        ledger_heading = LEDGER_HEADING if LEDGER_HEADING in text else LEGACY_HEADINGS[LEDGER_HEADING]
+        start = text.find(active_heading)
+        end = text.find(ledger_heading, start + len(active_heading))
         if start < 0 or end < 0:
             raise ValueError("active requirements headings are missing or out of order")
-        return start + len(ACTIVE_HEADING), end
-    start = text.find(PENDING_HEADING)
+        return start + len(active_heading), end
+    pending_heading = PENDING_HEADING if PENDING_HEADING in text else LEGACY_HEADINGS[PENDING_HEADING]
+    start = text.find(pending_heading)
     if start < 0:
         raise ValueError("pending requirements heading is missing")
-    return start + len(PENDING_HEADING), len(text)
+    return start + len(pending_heading), len(text)
 
 
 def _parse(text: str, section: str) -> tuple[dict[str, dict[str, str]], str]:
@@ -117,7 +134,7 @@ def pending_index(path: Path) -> list[dict[str, str]]:
             "id": record["id"],
             "topic": record["title"],
             "status": "pending",
-            "frozen_scope": _field_value(record["markdown"], "不可动边界:") or "",
+            "frozen_scope": _field_value(record["markdown"], "Frozen boundary:") or "",
         }
         for record in records.values()
     ]
@@ -161,7 +178,7 @@ def _validated_operation(operation: dict[str, Any], evidence: str | None) -> tup
             raise ValueError(f"{record_id} has placeholder fields: {', '.join(placeholders)}")
         if section == "pending" and not PENDING_TYPE.search(markdown):
             raise ValueError(f"{record_id} has invalid type")
-        if section == "active" and "状态:`ACTIVE`" not in markdown:
+        if section == "active" and not any(status in markdown for status in ("Status:`ACTIVE`", "状态:`ACTIVE`")):
             raise ValueError(f"{record_id} must have ACTIVE status")
         if record_id in seen or record_id in removals:
             raise ValueError(f"duplicate operation id: {record_id}")
@@ -183,10 +200,10 @@ def validate_records(records: Iterable[dict[str, str]]) -> None:
 
 
 def _render(prefix: str, records: list[str], pending: bool) -> str:
-    prefix = EMPTY_PENDING.sub("", prefix).strip()
+    prefix = re.sub(r"(?m)^\s*_无_\s*$", "", EMPTY_PENDING.sub("", prefix)).strip()
     parts = [part for part in [prefix, *records] if part]
     if pending and not records:
-        parts.insert(0, "_无_")
+        parts.insert(0, "_none_")
     return "\n\n" + "\n\n".join(parts) + "\n"
 
 
@@ -229,12 +246,12 @@ def apply_operation(
         if existing and existing["section"] != record["section"]:
             raise ValueError(f"cannot move requirement between sections: {record['id']}")
         markdown = record["markdown"]
-        if record["section"] == "active" and "批准依据:" not in markdown:
+        if record["section"] == "active" and not any(label in markdown for label in ("Approval evidence:", "批准依据:")):
             lines = markdown.splitlines()
             body = lines[1:]
             while body and not body[0].strip():
                 body.pop(0)
-            markdown = "\n".join([lines[0], "", f"- 批准依据:`{evidence.strip()}`", *body]).strip()
+            markdown = "\n".join([lines[0], "", f"- Approval evidence:`{evidence.strip()}`", *body]).strip()
         records[record["id"]] = {**record, "markdown": markdown}
 
     active_blocks = [item["markdown"] for item in records.values() if item["section"] == "active"]

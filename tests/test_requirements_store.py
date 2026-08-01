@@ -114,7 +114,7 @@ class RequirementsStoreTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 apply_operation(active, pending, operation)
             apply_operation(active, pending, operation, "user approved")
-            self.assertIn("批准依据:`user approved`", active.read_text(encoding="utf-8"))
+            self.assertIn("Approval evidence:`user approved`", active.read_text(encoding="utf-8"))
 
     def test_rejects_missing_empty_and_placeholder_fields(self):
         cases = [
