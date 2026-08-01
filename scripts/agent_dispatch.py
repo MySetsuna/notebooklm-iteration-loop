@@ -60,13 +60,22 @@ def _git_head(root: Path) -> str:
 
 def _worktree_digest(root: Path) -> str:
     diff = subprocess.run(
-        ["git", "diff", "--binary", "HEAD"],
+        ["git", "diff", "--binary", "HEAD", "--", ".", ":(exclude).iteration/**"],
         cwd=root,
         capture_output=True,
         check=False,
     )
     untracked = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        [
+            "git",
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            ".",
+            ":(exclude).iteration/**",
+        ],
         cwd=root,
         capture_output=True,
         check=False,
@@ -76,6 +85,8 @@ def _worktree_digest(root: Path) -> str:
     digest = hashlib.sha256(diff.stdout)
     for raw_path in sorted(path for path in untracked.stdout.split(b"\0") if path):
         relative = raw_path.decode("utf-8", errors="surrogateescape")
+        if relative == ".iteration" or relative.startswith(".iteration/"):
+            continue
         path = root / relative
         digest.update(raw_path)
         if path.is_file():

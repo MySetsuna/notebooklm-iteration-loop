@@ -3,8 +3,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
 
 from scripts.agent_dispatch import (
+    _worktree_digest,
     build_plan,
     finalize_result,
     stable_hash,
@@ -178,6 +181,30 @@ class AgentDispatchTests(unittest.TestCase):
             ["ridge", "tmux", "native", "serial"],
         )
         self.assertIn("never duplicate", first["transport"]["fallback_rule"])
+
+    def test_worktree_digest_excludes_iteration_control_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "new.txt").write_text("business", encoding="utf-8")
+            with patch(
+                "scripts.agent_dispatch.subprocess.run",
+                side_effect=[
+                    CompletedProcess(["git", "diff"], 0, b"tracked diff", b""),
+                    CompletedProcess(
+                        ["git", "ls-files"],
+                        0,
+                        b".iteration/agents/packet.json\0new.txt\0",
+                        b"",
+                    ),
+                ],
+            ) as run:
+                digest = _worktree_digest(root)
+            self.assertEqual(
+                digest,
+                hashlib.sha256(b"tracked diff" + b"new.txt" + hashlib.sha256(b"business").digest()).hexdigest(),
+            )
+            self.assertIn(":(exclude).iteration/**", run.call_args_list[0].args[0])
+            self.assertIn(":(exclude).iteration/**", run.call_args_list[1].args[0])
 
     def test_difficulty_routes_to_discovered_profiles(self):
         with tempfile.TemporaryDirectory() as directory:
