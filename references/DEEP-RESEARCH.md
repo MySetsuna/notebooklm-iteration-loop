@@ -23,6 +23,8 @@ nlm research status
 {"task_id":"<same-task-id>"}
 ```
 
+若 Chrome CDP 同时有多个 ChatGPT 页面，先从 `/json/list` 取目标 `id`，将其作为 `browser_target_id` 传入；勿凭猜测切换页面或重提任务。
+
 三行依次对应 `research_start`、`research_status`、`research_import`；不得用标题或新生成的伪 ID 替代返回的 task ID。
 
 调用时必须提供目标 `notebook_id`。报告正文与任务元数据只留本地；原始日志、密钥、浏览器凭据不得上传。

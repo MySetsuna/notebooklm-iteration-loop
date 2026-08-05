@@ -34,6 +34,7 @@
 
 - 首选 MCP:`chatgpt-nlm-research`，工具顺序:`research_start` → `research_status` → `research_import`。
 - `research_start` 传 `provider="chatgpt"`、完整 `query` 与本笔记本 `notebook_id`；返回 task ID 后只按该 ID 查询。
+- 多个 ChatGPT CDP 页面并存时，先从 `/json/list` 选定登录态 `browser_target_id`，再启动；不得猜测或重复提交。
 - `research_status` 完成后将报告落入本地 gitignored 数据目录；`research_import` 仅把报告文件经现有
   `notebooklm-mcp` `source_add(source_type="file", wait=true)` 导入。
 - ChatGPT Web quota/rate-limit 时可传 `provider="auto"` 回退 NotebookLM Deep Research；桥接器经 Chrome CDP 复用已登录页面，普通错误不可静默切换。
