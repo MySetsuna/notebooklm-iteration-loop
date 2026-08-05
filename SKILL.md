@@ -110,12 +110,14 @@ python <skill>/skills/refresh-notebooklm-auth/scripts/nlm_auth_flow.py status \
 
 The valid NotebookLM site may currently be `https://notebook.google.com/`; do not infer logged-out state merely because it differs from `notebooklm.google.com`. Authentication extraction may report only success/failure and non-sensitive metadata; never read, print, or commit cookies, tokens, or local credentials.
 
-For deep research, prefer the installed `chatgpt-nlm-research` stdio MCP when `OPENAI_API_KEY` is available:
-call `research_start` with `provider="chatgpt"`, poll the returned task ID with `research_status`, then call
-`research_import` to add only the persisted report through the local NotebookLM MCP. Use `provider="auto"` only when
-quota/rate-limit fallback is desired; it switches to NotebookLM Deep Research only for explicit API quota/limit errors.
+For deep research, prefer the installed `chatgpt-nlm-research` stdio MCP when a logged-in ChatGPT Web session is available
+through Chrome CDP: call `research_start` with `provider="chatgpt"`, then poll the returned exact browser-backed task ID
+with `research_status`, and call `research_import` to add only the persisted report through the local NotebookLM MCP.
+The bridge simulates the visible Deep Research control, composer input, and send action; it requires no OpenAI API key.
+Use `provider="auto"` only when quota/rate-limit fallback is desired; it switches to NotebookLM Deep Research only for
+an explicit web quota/limit signal, never for an arbitrary browser or selector error.
 The report is a temporary third source and must be removed after the decision is compressed into verified local facts.
-If the bridge is unavailable or no API key exists, use the existing NotebookLM Deep Research path below.
+If the bridge is unavailable or the logged-in browser session is unavailable, use the existing NotebookLM Deep Research path below.
 
 Create the decision JSON and state snapshot before calling:
 

@@ -11,8 +11,8 @@ nlm research status
 
 已安装的 `chatgpt-nlm-research` 是本机可选的深度调研入口，负责：
 
-1. `research_start` 用 `provider="chatgpt"` 启动 OpenAI Deep Research，并返回可持久追踪的 task ID；
-2. `research_status` 按同一 task ID 有界轮询，完成后把报告写入本地 gitignored 数据目录；
+1. `research_start` 用 `provider="chatgpt"` 在已登录 ChatGPT Web 页面点击 Deep Research、输入并发送，返回可持久追踪的浏览器 task ID；
+2. `research_status` 按同一 task ID 读取 Chrome CDP 页面 DOM；连续两次得到相同且非流式报告后，才写入本地 gitignored 数据目录；
 3. `research_import` 只通过现有 `notebooklm-mcp` 的 `source_add(source_type="file", wait=true)` 导入该报告。
 
 宿主服务器名为 `chatgpt-nlm-research`，最小调用序列：
@@ -27,7 +27,7 @@ nlm research status
 
 调用时必须提供目标 `notebook_id`。报告正文与任务元数据只留本地；原始日志、密钥、浏览器凭据不得上传。
 
-ChatGPT API 配额或限流时，改用 `provider="auto"`，桥接器仅在明确识别 quota/rate-limit 错误时切换 NotebookLM Deep Research；
+ChatGPT Web 配额或限流时，改用 `provider="auto"`，桥接器仅在明确识别 quota/rate-limit 页面信号时切换 NotebookLM Deep Research；
 也可直接用 `provider="notebooklm"`。NotebookLM 回退结果只导入 `result_type=5` 的深度调研报告，不导入其余网页来源。
 
 ChatGPT 报告在 NotebookLM 中仅作临时第三来源。决策完成后压缩为经代码/测试核验的 note 或 JSONL 事实，删除临时报告来源，恢复两份常驻来源。
