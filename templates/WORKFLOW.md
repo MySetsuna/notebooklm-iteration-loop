@@ -75,6 +75,7 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 - 常驻来源数:`2`;其他来源只能临时存在并按 `SKILL.md` 清理
 - 冷闸:`state_snapshot.py build` → `preflight.py --require-notebooklm --strict` →
   `notebook_gate.py assert-allowed`
+- 交互预算:无冷闸不调用 NLM；每轮单一主调用者，复用未变化快照/报告；只按精确 task ID 有界轮询；限流即记录并退避，不立即重试。
 
 ### 深度调研入口
 

@@ -28,6 +28,7 @@
 - 状态来源文件:`.iteration/PROJECT-STATE.snapshot.md`（仅 NotebookLM 冷闸通过后生成/替换）
 - 默认循环:`HOT_LOOP_SKIP_NOTEBOOKLM`
 - 删除既有来源前须用户明确同意。
+- 交互预算:无冷闸不调用 NLM；每轮单一主调用者，复用未变化快照/报告；只按精确 task ID 有界轮询；限流即记录并退避，不立即重试。
 
 ### 深度调研入口
 

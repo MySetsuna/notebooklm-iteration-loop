@@ -46,6 +46,12 @@ NotebookLM 只比较方案、查矛盾、审架构、列风险/假设、排序�
 无触发即留热循环。`two_failed_local_repairs` 须有两次不同且确定失败的 experiment，并记录结构化 result/evidence；
 多方案须至少两候选；冲突根因须至少两假设。
 
+## NotebookLM 交互预算
+
+- 无冷闸触发，不调用 NotebookLM；有触发时由主 Agent 单一负责，Worker 不重复调用。
+- 同一轮复用未变化的状态快照、决策包与已取报告；异步任务只按返回的精确 task ID 有界轮询，不并行轮询、不重复提交同一请求。
+- 命中 quota/rate-limit 或等价限流证据时，立即记录证据并退避；不得在同一轮立即重试或让 NotebookLM“再确认一次”。
+
 ## 调用前
 
 确认：

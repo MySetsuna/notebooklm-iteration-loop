@@ -27,6 +27,7 @@ Goal: deterministic facts, local queries, minimal changes, and verified closure.
 11. Every user task must first bind to a request intake; an empty Pending file alone never proves approval.
 12. Documents are UTF-8 without BOM. On Windows PowerShell 5.1, always read with `Get-Content -Encoding UTF8`; never write back text decoded by the ANSI default.
 13. At the end of every completed iteration, reconcile NotebookLM Notes: retain only an explicitly useful current note, otherwise delete it or mark it `Completed` with the iteration ID and closure evidence. Archive the compact decision/evidence record locally; do not leave open-ended planning Notes behind.
+14. NotebookLM interaction is budgeted: keep the hot loop local; after a cold trigger, use one primary caller, reuse unchanged snapshots/reports, poll only an active exact task ID at bounded intervals, and never issue redundant or immediate retries. On rate-limit evidence, record it and back off.
 
 ## Request-intake gate
 
