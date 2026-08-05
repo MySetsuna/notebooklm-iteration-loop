@@ -7,6 +7,31 @@ nlm research start "<question>" -n <notebook_id> -m deep
 nlm research status
 ```
 
+## 首选入口：ChatGPT Deep Research 桥接 MCP
+
+已安装的 `chatgpt-nlm-research` 是本机可选的深度调研入口，负责：
+
+1. `research_start` 用 `provider="chatgpt"` 启动 OpenAI Deep Research，并返回可持久追踪的 task ID；
+2. `research_status` 按同一 task ID 有界轮询，完成后把报告写入本地 gitignored 数据目录；
+3. `research_import` 只通过现有 `notebooklm-mcp` 的 `source_add(source_type="file", wait=true)` 导入该报告。
+
+宿主服务器名为 `chatgpt-nlm-research`，最小调用序列：
+
+```json
+{"query":"<question>","notebook_id":"<notebook-id>","provider":"chatgpt"}
+{"task_id":"<returned-task-id>","wait_seconds":30}
+{"task_id":"<same-task-id>"}
+```
+
+三行依次对应 `research_start`、`research_status`、`research_import`；不得用标题或新生成的伪 ID 替代返回的 task ID。
+
+调用时必须提供目标 `notebook_id`。报告正文与任务元数据只留本地；原始日志、密钥、浏览器凭据不得上传。
+
+ChatGPT API 配额或限流时，改用 `provider="auto"`，桥接器仅在明确识别 quota/rate-limit 错误时切换 NotebookLM Deep Research；
+也可直接用 `provider="notebooklm"`。NotebookLM 回退结果只导入 `result_type=5` 的深度调研报告，不导入其余网页来源。
+
+ChatGPT 报告在 NotebookLM 中仅作临时第三来源。决策完成后压缩为经代码/测试核验的 note 或 JSONL 事实，删除临时报告来源，恢复两份常驻来源。
+
 完成后仅导入调研报告为临时第三来源，绝不导入数十网页参考。以两常驻源和报告发起一次有格式、
 有证据上限的决策问题；建议必须经代码事实与确定性验收对抗核验。相关实现完成后，将结论压成 note/
 JSONL 事实，删除临时报告来源，恢复两常驻源。

@@ -29,6 +29,15 @@
 - 默认循环:`HOT_LOOP_SKIP_NOTEBOOKLM`
 - 删除既有来源前须用户明确同意。
 
+### 深度调研入口
+
+- 首选 MCP:`chatgpt-nlm-research`，工具顺序:`research_start` → `research_status` → `research_import`。
+- `research_start` 传 `provider="chatgpt"`、完整 `query` 与本笔记本 `notebook_id`；返回 task ID 后只按该 ID 查询。
+- `research_status` 完成后将报告落入本地 gitignored 数据目录；`research_import` 仅把报告文件经现有
+  `notebooklm-mcp` `source_add(source_type="file", wait=true)` 导入。
+- ChatGPT API quota/rate-limit 时可传 `provider="auto"` 回退 NotebookLM Deep Research；不可因普通错误静默切换。
+- NotebookLM 回退仅选 `result_type=5` 报告；临时报告用毕删除，常驻来源仍只保留 `REQUIREMENTS-SPEC` 与 `PROJECT-STATE`。
+
 ## 历史
 
 - `docs/archive/events-YYYY-MM.jsonl`：append-only；用 `scripts/archive.py tail` 有界读取。

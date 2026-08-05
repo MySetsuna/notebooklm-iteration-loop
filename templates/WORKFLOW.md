@@ -76,6 +76,13 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 - 冷闸:`state_snapshot.py build` → `preflight.py --require-notebooklm --strict` →
   `notebook_gate.py assert-allowed`
 
+### 深度调研入口
+
+- 首选已安装 MCP:`chatgpt-nlm-research`：`research_start` → `research_status` → `research_import`。
+- `research_start` 使用 `provider="chatgpt"`、`query`、`notebook_id`；报告先落本地 gitignored 数据目录，再仅导入报告文件。
+- ChatGPT API quota/rate-limit 时可用 `provider="auto"` 回退 NotebookLM Deep Research；普通错误不静默回退。
+- 回退导入仅选择 `result_type=5`；报告为临时第三来源，决策完成后删除并恢复两份常驻来源。
+
 ## 目录落点
 
 沿用仓库根目录 `SKILL.md` 的约定;本项目实例见 `docs/`
