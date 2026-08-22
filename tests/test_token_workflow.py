@@ -36,6 +36,32 @@ class TokenWorkflowTests(unittest.TestCase):
         self.assertIn("record-kiro-spec", skill)
         self.assertIn("Get-Content -Encoding UTF8", skill)
 
+    def test_deep_research_uses_chatgpt_bridge_without_provider_fallback(self):
+        paths = (
+            ROOT / "SKILL.md",
+            ROOT / "references" / "DEEP-RESEARCH.md",
+            ROOT / "docs" / "WORKFLOW.md",
+            ROOT / "templates" / "WORKFLOW.md",
+        )
+        workflow = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        for forbidden in (
+            "nlm research start",
+            "nlm research status",
+            'provider="auto"',
+            'provider="notebooklm"',
+            "NotebookLM Deep Research",
+        ):
+            self.assertNotIn(forbidden, workflow)
+        for required in (
+            "chatgpt-nlm-research",
+            "research_start",
+            "research_status",
+            "research_import",
+            'provider="chatgpt"',
+            "NotebookLM MCP",
+        ):
+            self.assertIn(required, workflow)
+
     def test_markdown_is_strict_utf8_without_mojibake(self):
         mojibake = ("锟斤拷", "鈥攖", "鈹溾攢", "鎵ц", "琛ヨ")
         for path in ROOT.rglob("*.md"):

@@ -114,10 +114,11 @@ For deep research, prefer the installed `chatgpt-nlm-research` stdio MCP when a 
 through Chrome CDP: call `research_start` with `provider="chatgpt"`, then poll the returned exact browser-backed task ID
 with `research_status`, and call `research_import` to add only the persisted report through the local NotebookLM MCP.
 The bridge simulates the visible Deep Research control, composer input, and send action; it requires no OpenAI API key.
-Use `provider="auto"` only when quota/rate-limit fallback is desired; it switches to NotebookLM Deep Research only for
-an explicit web quota/limit signal, never for an arbitrary browser or selector error.
+The workflow always uses `provider="chatgpt"`; quota, rate-limit, bridge, or ChatGPT CDP failure is a diagnosable
+blocking result. Do not switch provider, execute a direct NLM research command, or silently resubmit the task.
 The report is a temporary third source and must be removed after the decision is compressed into verified local facts.
-If the bridge is unavailable or the logged-in browser session is unavailable, use the existing NotebookLM Deep Research path below.
+If the bridge or logged-in browser session is unavailable, stop the research step and report the blocker; NotebookLM
+remains available for report import, source storage, and querying after a report exists.
 
 Create the decision JSON and state snapshot before calling:
 

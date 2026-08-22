@@ -1,15 +1,10 @@
-# NotebookLM 深度调研
+# ChatGPT Deep Research 桥接
 
-仅在外部生态、架构选型或根因无法由代码/现有两源确定，且结论会复用时使用：
+仅在外部生态、架构选型或根因无法由代码/现有两源确定，且结论会复用时使用。
 
-```text
-nlm research start "<question>" -n <notebook_id> -m deep
-nlm research status
-```
+## 唯一入口：ChatGPT Deep Research 桥接 MCP
 
-## 首选入口：ChatGPT Deep Research 桥接 MCP
-
-已安装的 `chatgpt-nlm-research` 是本机可选的深度调研入口，负责：
+已安装的 `chatgpt-nlm-research` 是本工作流唯一的深度调研发起端，负责：
 
 1. `research_start` 用 `provider="chatgpt"` 在已登录 ChatGPT Web 页面点击 Deep Research、输入并发送，返回可持久追踪的浏览器 task ID；
 2. `research_status` 按同一 task ID 读取 Chrome CDP 页面 DOM；连续两次得到相同且非流式报告后，才写入本地 gitignored 数据目录；
@@ -29,8 +24,8 @@ nlm research status
 
 调用时必须提供目标 `notebook_id`。报告正文与任务元数据只留本地；原始日志、密钥、浏览器凭据不得上传。
 
-ChatGPT Web 配额或限流时，改用 `provider="auto"`，桥接器仅在明确识别 quota/rate-limit 页面信号时切换 NotebookLM Deep Research；
-也可直接用 `provider="notebooklm"`。NotebookLM 回退结果只导入 `result_type=5` 的深度调研报告，不导入其余网页来源。
+工作流固定使用 `provider="chatgpt"`。配额、限流、桥接器故障或 ChatGPT CDP 会话不可用时，记录可诊断阻断信息并停止；
+不得改用其他 provider、直接执行 NLM 调研命令或静默重提任务。
 
 ChatGPT 报告在 NotebookLM 中仅作临时第三来源。决策完成后压缩为经代码/测试核验的 note 或 JSONL 事实，删除临时报告来源，恢复两份常驻来源。
 

@@ -82,8 +82,8 @@ python <skill>/scripts/preflight.py --project-root <repo> --strict
 - 首选已安装 MCP:`chatgpt-nlm-research`：`research_start` → `research_status` → `research_import`。
 - `research_start` 使用 `provider="chatgpt"`、`query`、`notebook_id`；报告先落本地 gitignored 数据目录，再仅导入报告文件。
 - 多个 ChatGPT CDP 页面并存时，先选定登录态 `browser_target_id`，再启动；不得猜测或重复提交。
-- ChatGPT Web quota/rate-limit 时可用 `provider="auto"` 回退 NotebookLM Deep Research；桥接器经 Chrome CDP 复用已登录页面，普通错误不静默回退。
-- 回退导入仅选择 `result_type=5`；报告为临时第三来源，决策完成后删除并恢复两份常驻来源。
+- 工作流固定使用 `provider="chatgpt"`；ChatGPT Web quota/rate-limit、桥接器或 CDP 会话故障均记录阻断并停止，普通错误不切换 provider、不静默重提。
+- 报告为临时第三来源，决策完成后删除并恢复两份常驻来源；NotebookLM MCP 仅承担报告导入、来源存储与查询。
 
 ## 目录落点
 

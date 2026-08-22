@@ -141,6 +141,15 @@
 - 追踪:`SKILL.md`、`references/QUALITY-AND-REQUIREMENTS.md`、`scripts/requirements_intake.py`、
   `scripts/requirements_gate.py`、`templates/REQUIREMENTS-INTAKE.json`、`tests/test_requirements_intake.py`。
 
+### REQ-012 · 统一使用 chatgpt-nlm-research 发起深度调研
+
+- Approval evidence:`批准 PENDING-REQ-20260822-01，按此草案推进`
+- Status:`ACTIVE`
+- Version:`v1.0.0`
+- Behavior:`迭代工作流进入深度调研时，以已安装的 chatgpt-nlm-research 为唯一调研发起端：调用 research_start(provider=chatgpt)，轮询同一浏览器任务的 research_status，并用 research_import 将已持久化报告导入目标 NotebookLM 笔记本。`
+- Boundary:`工作流不得启动或回退到 NotebookLM Deep Research；桥接或登录会话不可用时须失败并给出可诊断阻断信息。NotebookLM MCP 仍可用于报告导入后的来源存储与查询；保留既有热/冷触发门、状态快照、审批和安全约束；不新增 API key、cookie、浏览器存储或凭据。`
+- Acceptance:`受控文件检索除迁移说明/历史记录外，不再存在会启动或回退 NotebookLM Deep Research 的工作流指令、脚本或测试；相关回归测试、仓库原生测试/静态检查及 git diff --check 通过；提交后当前分支工作树干净且远端包含该实现。`
+- Traceability:`SKILL.md、README/工作流说明、references、templates、scripts 与 tests 中的深度调研路径；以 chatgpt-nlm-research 的 research_start/research_status/research_import 调用及阻断测试验证。
 ## 修订账本 (Revision Ledger)
 
 关闭 Pending、历史修订与批准证据见 `docs/archive/events-2026-07.jsonl`；本文件只保留当前 Active。

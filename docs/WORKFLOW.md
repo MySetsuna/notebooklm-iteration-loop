@@ -37,8 +37,8 @@
 - 多个 ChatGPT CDP 页面并存时，先从 `/json/list` 选定登录态 `browser_target_id`，再启动；不得猜测或重复提交。
 - `research_status` 完成后将报告落入本地 gitignored 数据目录；`research_import` 仅把报告文件经现有
   `notebooklm-mcp` `source_add(source_type="file", wait=true)` 导入。
-- ChatGPT Web quota/rate-limit 时可传 `provider="auto"` 回退 NotebookLM Deep Research；桥接器经 Chrome CDP 复用已登录页面，普通错误不可静默切换。
-- NotebookLM 回退仅选 `result_type=5` 报告；临时报告用毕删除，常驻来源仍只保留 `REQUIREMENTS-SPEC` 与 `PROJECT-STATE`。
+- 工作流固定传 `provider="chatgpt"`；ChatGPT Web quota/rate-limit、桥接器或 CDP 会话故障均记录阻断并停止，普通错误不可切换 provider 或静默重提。
+- 临时报告用毕删除，常驻来源仍只保留 `REQUIREMENTS-SPEC` 与 `PROJECT-STATE`；NotebookLM MCP 仅承担报告导入、来源存储与查询。
 
 ## 历史
 
